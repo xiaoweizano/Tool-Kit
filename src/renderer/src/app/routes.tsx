@@ -9,6 +9,7 @@ export const router = createHashRouter([
     children: [
       { path: '/', element: <Home /> },
       ...tools.map((t) => ({ path: t.route.replace(/^\//, ''), element: <t.component /> })),
+      { path: 'settings', lazy: async () => ({ Component: (await import('@pages/Settings')).Settings }) },
       { path: '*', element: <Navigate to="/" replace /> }
     ]
   }
