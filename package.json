@@ -9,9 +9,10 @@
     "dev:web": "vite --config vite.web.config.ts",
     "lint": "eslint .",
     "test": "vitest run",
-    "build:web": "electron-vite build && node scripts/copy-web.mjs",
-    "build:desktop": "electron-vite build && electron-builder --config electron-builder.yml",
-    "typecheck": "tsc --noEmit"
+    "build:web": "electron-vite build && node scripts/copy-static.mjs && node scripts/copy-web.mjs",
+    "build:desktop": "electron-vite build && node scripts/copy-static.mjs && electron-builder --config electron-builder.yml",
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
     "comlink": "^4.4.0",
@@ -33,6 +34,7 @@
     "electron-vite": "^2.3.0",
     "eslint": "^9.15.0",
     "jsdom": "^30.0.1",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.15.0",
