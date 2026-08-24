@@ -54,7 +54,7 @@ export function TriStateOutput({ result, phase, emptyHint }: Props): JSX.Element
         <div style={{ height: lines.length * LINE_H, position: 'relative' }}>
           <div style={{ transform: `translateY(${first * LINE_H}px)` }}>
             {slice.map((ln, i) => (
-              <div key={first + i} style={{ height: LINE_H }}
+              <div key={first + i} style={{ height: LINE_H }} className="whitespace-pre"
                 dangerouslySetInnerHTML={{ __html: highlightLine(ln, 'json') || '&nbsp;' }} />
             ))}
           </div>
