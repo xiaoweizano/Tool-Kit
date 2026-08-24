@@ -1,3 +1,5 @@
+import { RouterProvider } from 'react-router-dom'
+import { router } from './app/routes'
 export function App(): JSX.Element {
-  return <div className="p-8 font-sans">ToolKit 基座启动中…</div>
+  return <RouterProvider router={router} />
 }
