@@ -48,7 +48,7 @@ export function Home(): JSX.Element {
                 <span className="h-2 w-2 border-1.5 border-neutral bg-base-100" />
                 <span className="text-sm">{t.name}</span>
                 {t.capability.network && (
-                  <span className="badge badge-xs badge-warning font-mono text-[11px]">NET</span>
+                  <span className="badge badge-xs badge-outline font-mono text-[11px]">NET</span>
                 )}
               </div>
               <span className="mt-1 block font-mono text-[11px] text-neutral">{t.id}</span>
