@@ -19,7 +19,7 @@ export function ToolNavLink({ tool }: { tool: ToolDescriptor }): JSX.Element {
       />
       <span className="max-lg:hidden whitespace-nowrap">{tool.name}</span>
       {tool.capability.network ? (
-        <span className="badge badge-warning badge-xs ml-auto max-lg:hidden font-mono text-[11px]">NET</span>
+        <span className="badge badge-xs badge-outline ml-auto max-lg:hidden font-mono text-[11px]">NET</span>
       ) : null}
       {active && (
         <span
