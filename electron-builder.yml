@@ -1,0 +1,16 @@
+appId: com.toolkit.app
+productName: ToolKit
+directories:
+  output: release
+files:
+  - out/**
+asar: true
+icon: build/icons/icons/icon.ico   # win; mac 用同目录 icon.icns(electron-builder 自动识别)
+win:
+  target: nsis
+nsis:
+  oneClick: true
+  perMachine: false
+mac:
+  target: dmg
+  identity: null   # ad-hoc 签名
