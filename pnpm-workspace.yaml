@@ -1,9 +1,7 @@
 allowBuilds:
   electron: true
   esbuild: true
-  phantomjs-prebuilt: true
 
 onlyBuiltDependencies:
   - electron
   - esbuild
-  - phantomjs-prebuilt

@@ -1,6 +1,6 @@
 // Generate platform icons (icon.ico / icon.icns + PNGs) from assets/icon.svg
 // Replaces electron-icon-builder (its phantomjs-prebuilt dependency has a dead download CDN).
-// Usage: node scripts/gen-icons.mjs   (runs automatically via prebuild:icons)
+// Usage: pnpm icons
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
