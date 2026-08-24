@@ -7,5 +7,5 @@ export default defineConfig({
     '@pages': resolve('src/renderer/src/pages'),
     '@tools': resolve('src/renderer/src/tools')
   } },
-  test: { environment: 'node', include: ['test/**/*.test.ts'] }
+  test: { environment: 'node', include: ['test/**/*.test.ts'], setupFiles: ['test/setup.ts'] }
 })
