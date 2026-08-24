@@ -7,7 +7,6 @@ interface Props {
   result: ToolResult<string> | null
   phase: 'idle' | 'running' | 'done'
   emptyHint: string
-  onRetry?: () => void
 }
 const LINE_H = 22
 

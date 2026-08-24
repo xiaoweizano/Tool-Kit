@@ -17,5 +17,5 @@ export const tools: ToolDescriptor[] = [
 export function searchTools(query: string): ToolDescriptor[] {
   const q = query.trim().toLowerCase()
   if (!q) return tools
-  return tools.filter((t) => t.id.includes(q) || t.name.toLowerCase().includes(q))
+  return tools.filter((t) => t.id.toLowerCase().includes(q) || t.name.toLowerCase().includes(q))
 }
