@@ -1,4 +1,5 @@
 import { useLiveTransform } from '@core/useLiveTransform'
+import { CopyButton } from '@components/CopyButton'
 import { InputZone } from '@components/InputZone'
 import { TriStateOutput } from '@components/TriStateOutput'
 import { posToLineCol } from './transform'
@@ -16,6 +17,10 @@ export default function JsonParserPage(): JSX.Element {
           {phase === 'done' && result?.status === 'error' && <span className="text-error">✕ ERROR</span>}
           {phase === 'running' && <span className="text-warning">◐ …</span>}
         </span>
+        <CopyButton
+          getText={() => (result?.status === 'ok' ? result.data : '')}
+          enabled={phase === 'done' && result?.status === 'ok'}
+        />
       </header>
 
       <section className="border border-base-300 bg-base-200/40">
