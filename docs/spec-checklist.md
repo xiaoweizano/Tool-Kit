@@ -4,10 +4,10 @@
 > 验证方式:`☑ (测试名)` = 已由自动化测试跑通(`pnpm test` 41 用例全绿 / `node scripts/check-web-purity.mjs` OK);
 > `☑ 静态核验` = 已做静态代码核验;`☐ 待人工` = 需人工目验(双端同屏 / 主题视觉 / 剪贴板 / 安装首跑)。
 >
-> 统计:共 **27** 个 Scenario(注:brief 预估计数 4/11/6/6/7 与 spec 实际条数 3/8/5/6/5 不符,以 spec 文件实际内容为准)。
-> 已验证 ☑ 22 条(其中自动化测试 17、静态核验 5),待人工 ☐ 5 条。
+> 统计:共 **29** 个 Scenario(tool-registry 4 / app-shell 9 / tool-ux-conventions 5 / json-parser-tool 6 / dual-output-build 5;注:brief 预估与 spec 实际条数不符,以 spec 文件实际内容为准)。
+> 已验证 ☑ 22 条(其中自动化测试 17、静态核验 5),待人工 ☐ 7 条。
 
-## tool-registry(3 Scenario)
+## tool-registry(4 Scenario)
 
 ### Requirement: ToolDescriptor 接口契约
 - [x] **注册缺少 capability 的工具被编译期拒绝** — ☑ 静态核验:`ToolDescriptor` 为必填字段的 TS 接口,`pnpm typecheck` 全量通过;缺字段对象在编译期即报错(类型测试见 `test/types.test.ts` 4 用例绿)
@@ -17,7 +17,7 @@
 - [ ] **联网工具在导航中带联网标识** — ☐ 待人工:当前注册表仅 JSON 工具(offline: true),联网标识逻辑需出现首个联网工具后人工目验
 - [x] **离线工具断网后完整可用** — ☑ 静态核验:JSON 工具 capability offline: true,transform 为本地纯函数(`test/json-transform.test.ts` 12 用例绿),无任何网络请求;Web 纯度检查通过(产物无 electron/网络依赖)
 
-## app-shell(8 Scenario)
+## app-shell(9 Scenario)
 
 ### Requirement: 左侧导航布局
 - [x] **点击导航切换工具** — ☑ (tests/smoke/home.spec.ts:导航项渲染 + 工具页粘贴即出,路由切换经 Playwright 守门)
@@ -74,10 +74,12 @@
 - `node scripts/check-web-purity.mjs`:web purity OK
 - `pnpm typecheck` / `pnpm lint`:见任务终验记录,全绿
 
-## 待人工项汇总(5 条)
+## 待人工项汇总(7 条)
 
-1. 联网标识(待首个联网工具落地)
-2. 主题切换即时视觉生效 + 设置页色卡一致性
-3. 整体中文文案目验
-4. 首页搜索回车直达 / 复制按钮剪贴板反馈
-5. 双端同屏 dev + 桌面安装首跑(含 SmartScreen/右键打开指引核对)
+1. 联网标识(tool-registry:待首个联网工具落地)
+2. 主题切换即时视觉生效(app-shell)
+3. 整体中文文案目验(app-shell)
+4. 首页搜索回车直达(app-shell)
+5. 设置页色卡与主题选择器一致性(app-shell)
+6. 一键复制剪贴板反馈(tool-ux-conventions)
+7. 双端同屏 dev + 桌面安装首跑,含 SmartScreen/右键打开指引核对(dual-output-build)
