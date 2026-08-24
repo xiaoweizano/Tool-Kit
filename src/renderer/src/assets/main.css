@@ -45,3 +45,8 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+.tk-k{color:#7FA8C9}
+.tk-s{color:var(--color-success)}
+.tk-n{color:var(--color-warning)}
+.tk-p{color:var(--color-neutral)}
