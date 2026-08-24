@@ -20,7 +20,7 @@ describe('JSON 工具页', () => {
     fireEvent.change(screen.getByPlaceholderText(/粘贴/), { target: { value: '{"a":1}' } })
     // indent=2 时 {"a":1} 格式化为 3 行(brief 原文 /2 行/ 系笔误,实际行数为 3)
     await screen.findByText(/3 行/)
-    expect(screen.getByRole('button', { name: '复制' })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: '复制' }).length).toBeGreaterThan(0)
   })
   it('非法 JSON 出 ERROR 定位', async () => {
     render(<MemoryRouter><JsonParserPage /></MemoryRouter>)
@@ -30,5 +30,6 @@ describe('JSON 工具页', () => {
   it('空输入显示 EMPTY 引导', () => {
     render(<MemoryRouter><JsonParserPage /></MemoryRouter>)
     expect(screen.getByText(/粘贴内容到上方/)).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: '复制' }).some((b) => (b as HTMLButtonElement).disabled)).toBe(true)
   })
 })
