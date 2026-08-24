@@ -13,7 +13,8 @@ export default defineConfig({
         '@': resolve('src/renderer/src'),
         '@core': resolve('src/renderer/src/core'),
         '@pages': resolve('src/renderer/src/pages'),
-        '@tools': resolve('src/renderer/src/tools')
+        '@tools': resolve('src/renderer/src/tools'),
+      '@app': resolve('src/renderer/src/app')
       }
     }
   }
