@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@plugin "daisyui" { themes: false; }
+
+@plugin "daisyui/theme" {
+  name: "toolkit-dark"; default: true; color-scheme: dark;
+  --color-base-100: #0A0A0A; --color-base-200: #111214; --color-base-300: #2A2C30;
+  --color-base-content: #F4F1EA;
+  --color-primary: #F4F1EA; --color-primary-content: #0A0A0A;
+  --color-error: #E30613; --color-error-content: #F4F1EA;
+  --color-warning: #FFB300; --color-warning-content: #0A0A0A;
+  --color-success: #00A651; --color-success-content: #F4F1EA;
+  --color-neutral: #8A8D93; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+}
+@plugin "daisyui/theme" {
+  name: "toolkit-paper"; color-scheme: light;
+  --color-base-100: #F4F1EA; --color-base-200: #FFFFFF; --color-base-300: #D8D3C4;
+  --color-base-content: #1A1917;
+  --color-primary: #1A1917; --color-primary-content: #F4F1EA;
+  --color-error: #C50A10; --color-error-content: #F4F1EA;
+  --color-warning: #B07500; --color-warning-content: #F4F1EA;
+  --color-success: #007A3D; --color-success-content: #F4F1EA;
+  --color-neutral: #6B6E74; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+}
+@plugin "daisyui/theme" {
+  name: "toolkit-caramel"; color-scheme: dark;
+  --color-base-100: #2B1F14; --color-base-200: #33261A; --color-base-300: #4A3826;
+  --color-base-content: #F2E6D4;
+  --color-primary: #F2E6D4; --color-primary-content: #2B1F14;
+  --color-error: #E8353D; --color-error-content: #F2E6D4;
+  --color-warning: #FFB300; --color-warning-content: #2B1F14;
+  --color-success: #2FBF71; --color-success-content: #2B1F14;
+  --color-neutral: #A08B6E; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+}
+
+/* 线路图世界基元:32px 模块网格 */
+.circuit-grid {
+  background-image:
+    linear-gradient(var(--color-base-300) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-base-300) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

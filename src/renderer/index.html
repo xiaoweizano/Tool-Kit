@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="toolkit-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com" />
+  <title>ToolKit</title>
+  <script>
+    // 首帧主题注入:先于 React,防 FOUC(存储键与 core/storage.ts 约定一致)
+    try {
+      var raw = localStorage.getItem('toolkit.settings')
+      var t = raw ? (JSON.parse(raw).state || {}).theme : null
+      if (t) document.documentElement.dataset.theme = t
+    } catch (e) {}
+  </script>
+</head>
+<body class="bg-base-100 text-base-content">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
