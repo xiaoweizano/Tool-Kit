@@ -3,7 +3,7 @@
     "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler",
     "strict": true, "jsx": "react-jsx", "skipLibCheck": true,
     "types": ["vite/client"], "noEmit": true,
-    "baseUrl": ".", "paths": { "@/*": ["src/renderer/src/*"], "@core/*": ["src/renderer/src/core/*"], "@pages/*": ["src/renderer/src/pages/*"], "@tools/*": ["src/renderer/src/tools/*"], "@app/*": ["src/renderer/src/app/*"] }
+    "baseUrl": ".", "paths": { "@/*": ["src/renderer/src/*"], "@core/*": ["src/renderer/src/core/*"], "@pages/*": ["src/renderer/src/pages/*"], "@tools/*": ["src/renderer/src/tools/*"], "@app/*": ["src/renderer/src/app/*"], "@components/*": ["src/renderer/src/components/*"] }
   },
   "include": ["src/renderer", "test", "electron"]
 }

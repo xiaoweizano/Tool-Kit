@@ -11,7 +11,8 @@ export default defineConfig({
       '@core': resolve('src/renderer/src/core'),
       '@pages': resolve('src/renderer/src/pages'),
       '@tools': resolve('src/renderer/src/tools'),
-      '@app': resolve('src/renderer/src/app')
+      '@app': resolve('src/renderer/src/app'),
+      '@components': resolve('src/renderer/src/components')
     }
   },
   build: { outDir: '../../dist/web', emptyOutDir: true }
