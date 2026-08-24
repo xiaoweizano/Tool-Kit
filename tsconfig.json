@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler",
+    "strict": true, "jsx": "react-jsx", "skipLibCheck": true,
+    "types": ["vite/client"], "noEmit": true,
+    "baseUrl": ".", "paths": { "@/*": ["src/renderer/src/*"] }
+  },
+  "include": ["src/renderer", "test", "electron"]
+}

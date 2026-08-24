@@ -4,3 +4,6 @@ dist/
 release/
 *.local
 .superpowers/
+.claude/
+.gstack/
+.impeccable/
