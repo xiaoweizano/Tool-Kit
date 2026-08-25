@@ -4,6 +4,7 @@ import { transformJson } from '@tools/json-parser/transform'
 import { convertTimestamp } from '@tools/date-converter/transform'
 import { fillPlaceholders } from '@tools/sql-placeholder/transform'
 import { assembleTenantSql } from '@tools/sql-builder/transform'
+import { matchRegex } from '@tools/regex-generator/transform'
 
 const registry = new Map<string, Transform<unknown, unknown, TransformOpts>>()
 // 注册行示例(加工具在此追加 import + 一行注册)。
@@ -18,6 +19,9 @@ registry.set('sql-builder', ((input: { tenants: string; sqls: string }) => {
   const sqls = (input?.sqls ?? '').split(/\n+/).map((x) => x.trim()).filter(Boolean)
   return assembleTenantSql({ tenants: splits(input?.tenants ?? ''), sqls })
 }) as Transform<unknown, unknown, TransformOpts>)
+registry.set('regex-generator', ((input: { pattern: string; flags: string; text: string }) =>
+  matchRegex({ pattern: input?.pattern ?? '', flags: input?.flags || 'g', text: input?.text ?? '' })
+) as Transform<unknown, unknown, TransformOpts>)
 
 const unsupported = (id: string): ToolResult<never> => ({
   status: 'error', kind: 'unsupported', structure: id, message: '未注册的工具'

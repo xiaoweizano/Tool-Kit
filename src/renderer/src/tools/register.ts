@@ -5,6 +5,7 @@ import { DateIcon } from '@tools/date-converter/icon'
 import { SqlIcon } from '@tools/sql-placeholder/icon'
 import { IdIcon } from '@tools/id-generator/icon'
 import { SqlBuilderIcon } from '@tools/sql-builder/icon'
+import { RegexIcon } from '@tools/regex-generator/icon'
 
 // lazy 放在 register.ts 而非页面 index.tsx,避免页面自引用自身模块的循环导入
 const JsonParserPage = lazy(() => import('@tools/json-parser'))
@@ -12,6 +13,7 @@ const DateConverterPageLazy = lazy(() => import('@tools/date-converter'))
 const SqlPlaceholderPageLazy = lazy(() => import('@tools/sql-placeholder'))
 const IdGeneratorPageLazy = lazy(() => import('@tools/id-generator'))
 const SqlBuilderPageLazy = lazy(() => import('@tools/sql-builder'))
+const RegexGeneratorPageLazy = lazy(() => import('@tools/regex-generator'))
 
 // 加一个工具 = 在此数组追加一行(实现接口 + 目录),导航/路由自动生效
 export const tools: ToolDescriptor[] = [
@@ -38,6 +40,11 @@ export const tools: ToolDescriptor[] = [
   {
     id: 'sql-builder', name: '租户 SQL 组装', icon: SqlBuilderIcon,
     route: '/tools/sql-builder', component: SqlBuilderPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'regex-generator', name: '正则生成/测试', icon: RegexIcon,
+    route: '/tools/regex-generator', component: RegexGeneratorPageLazy,
     capability: { offline: true }
   }
 ]
