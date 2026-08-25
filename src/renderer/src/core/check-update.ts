@@ -1,6 +1,6 @@
 export const APP_VERSION = '0.1.0' // 与 package.json 同步(构建期可改 vite define 注入)
-const OWNER = 'toolkit-dev' // 占位,后续全局替换
-const REPO = 'toolkit'
+const OWNER = 'xiaoweizano'
+const REPO = 'Tool-Kit'
 export const RELEASES_URL = `https://github.com/${OWNER}/${REPO}/releases`
 const API = `https://api.github.com/repos/${OWNER}/${REPO}/releases/latest`
 

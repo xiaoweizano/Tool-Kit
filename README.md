@@ -27,3 +27,22 @@ pnpm build:desktop  # Win/Mac 安装包(未签名,见「首次运行」)
        └────────────────┘             └────────────────┘
 加一个工具 = src/tools/<id>/ 目录 + register.ts 一行 + transform.worker.ts 一行
 
+## 服务器部署(Docker Compose)
+
+在线版是纯静态产物(`dist/web`),HashRouter + 相对路径,任意静态服务器零回退配置。服务器上用 docker compose:
+
+```bash
+# 本机构建(或 CI 构建后上传 dist/web)
+pnpm build:web
+
+# 上传 dist/web 与 deploy/ 到服务器后:
+cd deploy && docker compose up -d
+# 访问 http://<服务器IP>:8080
+```
+
+要点:
+- `deploy/docker-compose.yml`:nginx:alpine 挂载 `../dist/web` 只读 + `deploy/nginx.conf`(gzip、assets 长缓存、入口 no-cache)
+- 更新版本 = 重新 `pnpm build:web` → 覆盖服务器 `dist/web` → `docker compose restart`;或由 CI 构建 artifact 后 scp/rsync
+- 端口默认 8080,反代域名时把 ports 改为 `127.0.0.1:8080:80` 并在宿主 Nginx/Caddy 接管 TLS
+- 与 GitHub Pages 并存不冲突:Pages 是免费不到期的长期在线版,自有服务器是过渡期的自控部署
+
