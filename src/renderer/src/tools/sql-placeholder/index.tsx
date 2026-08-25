@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useMultiFieldTransform } from '@core/useMultiFieldTransform'
 import { CopyButton } from '@components/CopyButton'
 import { TriStateOutput } from '@components/TriStateOutput'
-import { autoFillDefaults } from './transform'
+import type { ToolResult } from '@core/types'
+import { autoFillDefaults, formatSql, unfillLiterals } from './transform'
 
 interface SqlInput { sql: string; params: string }
 
@@ -12,11 +13,22 @@ const isEmpty = (input: SqlInput): boolean => !input.sql.trim()
 export default function SqlPlaceholderPage(): JSX.Element {
   const [sql, setSql] = useState('')
   const [params, setParams] = useState('')
+  const [notice, setNotice] = useState('')
   const { input, setField, phase, result } = useMultiFieldTransform<SqlInput, string>('sql-placeholder', isEmpty)
 
   const setBoth = (field: keyof SqlInput, v: string): void => {
     if (field === 'sql') setSql(v); else setParams(v)
     setField({ [field]: v })
+  }
+  const applyTransform = (fn: (sql: string) => ToolResult<string>, label: string): void => {
+    const r = fn(sql)
+    if (r.status === 'ok') {
+      setBoth('sql', r.data)
+      setNotice('')
+    } else {
+      // 无静默失败:显示短错误,不执行替换
+      setNotice(`${label} 失败:${r.message}`)
+    }
   }
   const list = input?.params ? input.params.split('\n') : params.split('\n')
 
@@ -37,8 +49,11 @@ export default function SqlPlaceholderPage(): JSX.Element {
       </section>
       <div className="mt-3 flex items-center gap-2">
         <button className="btn btn-outline btn-xs" onClick={() => { setBoth('params', autoFillDefaults(sql).join('\n')) }}>一键默认值</button>
+        <button className="btn btn-outline btn-xs" onClick={() => applyTransform(formatSql, '格式化')}>格式化</button>
+        <button className="btn btn-outline btn-xs" onClick={() => applyTransform(unfillLiterals, '反向替换')}>反向替换</button>
         <span className="font-mono text-[11px] text-neutral">{list.length} 个 ?</span>
       </div>
+      {notice && <p className="mt-1 font-mono text-[11px] text-error">{notice}</p>}
       <div className="mt-4">
         <TriStateOutput result={result} phase={phase} emptyHint="填写 SQL 与参数,自动替换 ? 即刻点亮…" />
       </div>
