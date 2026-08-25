@@ -67,7 +67,7 @@ React 18 + TS 5 + zustand + Comlink Worker + Vitest;Tailwind 4 + daisyUI 5（已
   - `snowflake(): string`(真 64 位雪花:41bit 时间戳 + 10bit worker + 12bit 序列,进程内序列自增,16 进制/十进制输出,可测)
   - `sequence(start?, step?, count): string[]`
   - `shortCode(count, len): string[]`(字母数字混排)
-  - `generateIds(type, count, opts): ToolResult<{ ids: string[]; preview: string }>` — preview 为前几行文本用于输出渲染
+  - `generateIds(type, count, opts): ToolResult<string>` — 结果按 `sep` 直拼串(默认换行),定稿以 Task 4 实现为准(去 preview 对象形态)
 - **输出**:TriStateOutput 展示批量结果(文本拼接),一键复制全部
 - **不走 useLiveTransform**:页面本地调用 generateIds(无输入防抖语义),仅 count/type/opts 变化时 regenerate
 

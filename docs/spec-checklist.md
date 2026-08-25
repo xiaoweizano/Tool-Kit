@@ -68,11 +68,43 @@
 - [x] **tag 触发桌面 Release** — ☑ 静态核验:`.github/workflows/release.yml` 定义 v* tag 触发 Win/Mac 构建并附加 Draft Release(真实触发需推送 tag 验证,属 CI 环境外)
 - [x] **在线版静态产物可部署** — ☑ (build:web 产物 dist/web + check-web-purity 通过;CI workflow 含静态产物 artifact 上传)
 
+## tools 2-5(2026-08-25 新增批次)
+
+> 沿用 JSON 黄金模板批量落地 4 个工具:时间戳互转 / SQL 占位符 / ID 生成 / 租户 SQL 组装。
+> 每工具 = `src/tools/<id>/` 目录 + register.ts 一行 + (经 worker 工具) transform.worker.ts 一行。
+
+### date-converter(时间戳互转)
+- [x] **精度自动检测(s/ms/us/date)** — ☑ test/date-converter.test.ts(11 用例绿)
+- [x] **四视图输出(ISO/本地/UTC/unix 秒·毫秒)** — ☑ transform 返回多行文本
+- [x] **日期串 ↔ unix 互转(dateStrToUnix)** — ☑
+- [x] **非法输入 → invalid-input 定位** — ☑
+- [x] **单输入粘贴即出(useLiveTransform)** — ☑ 页面 /tools/date-converter
+
+### sql-placeholder(SQL 占位符替换)
+- [x] **? 按序替换 + 引号转义/数字/bool/null** — ☑ test/sql-placeholder.test.ts(6 用例绿)
+- [x] **参数不足 → partial 标注 failedItems** — ☑
+- [x] **一键默认值(autoFillDefaults)** — ☑
+- [x] **反向替换(unfillLiterals)+格式化(formatSql)** — ☑ 纯函数转测试 + 页面按钮(用户裁决接 UI)
+- [x] **双输入 worker 适配(参数换行→数组)** — ☑ 页面 /tools/sql-placeholder
+
+### id-generator(ID 生成)
+- [x] **UUID v4 格式/version/variant 位** — ☑ test/id-generator.test.ts(8 用例绿)
+- [x] **真雪花(41+10+12 位,BigInt 无溢出,单调)** — ☑
+- [x] **批量 count 校验/前缀/分隔符选择器(用户裁决补)** — ☑
+- [x] **按钮触发不经 worker(纯本地)** — ☑ 页面 /tools/id-generator
+- [~] 雪花同毫秒>4096 序列回绕 — deferred(UI 单次 max1000 触不到)
+
+### sql-builder(租户 SQL 组装)
+- [x] **每条 SQL×每租户 笛卡尔积分组** — ☑ test/sql-builder.test.ts(4 用例绿)
+- [x] **区块头 `-- ===== [租户] =====` + 缺分号自动补** — ☑
+- [x] **空租户/空 SQL → invalid-input 定位** — ☑
+- [x] **SQL 按行切(文案对齐行为,用户裁决不改 worker)** — ☑ 页面 /tools/sql-builder
+
 ## 验证记录
 
-- `pnpm test`:11 文件 / 41 用例全部通过(2026-08-25)
-- `node scripts/check-web-purity.mjs`:web purity OK
-- `pnpm typecheck` / `pnpm lint`:见任务终验记录,全绿
+- `pnpm test`:16 文件 / 72 用例全部通过(2026-08-25)
+- `pnpm lint` / `pnpm typecheck`:全绿
+- `pnpm build:web` + `node scripts/check-web-purity.mjs`:web purity OK
 
 ## 待人工项汇总(7 条)
 
