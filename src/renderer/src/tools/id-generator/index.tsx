@@ -10,15 +10,23 @@ const TYPES: { id: IdType; label: string }[] = [
   { id: 'shortcode', label: '随机短码' }
 ]
 
+const SEP_OPTIONS = [
+  { id: '\n', label: '换行' },
+  { id: ', ', label: '逗号' },
+  { id: ' ', label: '空格' },
+  { id: '\t', label: '制表' }
+]
+
 export default function IdGeneratorPage(): JSX.Element {
   const [type, setType] = useState<IdType>('uuid')
   const [count, setCount] = useState(5)
   const [prefix, setPrefix] = useState('')
+  const [sep, setSep] = useState('\n')
   const [out, setOut] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
   const gen = (): void => {
-    const r = generateIds(type, count, { prefix })
+    const r = generateIds(type, count, { prefix, sep })
     if (r.status === 'ok') { setOut(r.data); setErr(null) } else { setOut(null); setErr(r.message) }
   }
 
@@ -41,6 +49,11 @@ export default function IdGeneratorPage(): JSX.Element {
           </label>
           <label className="flex items-center gap-2 text-sm text-neutral">前缀
             <input value={prefix} onChange={(e) => setPrefix(e.target.value)} placeholder="可选,如 t_" className="input input-bordered input-sm w-32 font-mono" />
+          </label>
+          <label className="flex items-center gap-2 text-sm text-neutral">分隔
+            <select value={sep} onChange={(e) => setSep(e.target.value)} className="select select-bordered select-sm font-mono">
+              {SEP_OPTIONS.map((o) => <option key={o.label} value={o.id}>{o.label}</option>)}
+            </select>
           </label>
           <button className="btn btn-sm btn-primary ml-auto" onClick={gen}>生成</button>
         </div>
