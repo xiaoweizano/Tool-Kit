@@ -100,9 +100,27 @@
 - [x] **空租户/空 SQL → invalid-input 定位** — ☑
 - [x] **SQL 按行切(文案对齐行为,用户裁决不改 worker)** — ☑ 页面 /tools/sql-builder
 
-## 验证记录
+## tools 6-7(2026-08-25 第二批)
 
-- `pnpm test`:16 文件 / 72 用例全部通过(2026-08-25)
+### regex-generator(正则生成/测试)
+- [x] **模板库 23 条(邮箱/手机/IPv4/IPv6/URL/日期/时间/日期时间/整数/小数/身份证/汉字/UUID/颜色/邮编/QQ/微信/车牌/银行卡/MAC/端口/用户名/空白行)** — ☑ test/regex-generator.test.ts golden(每条可编译且与示例匹配)
+- [x] **实时匹配列表(序号+位置+内容)+ 截断提示** — ☑ 32 用例全绿
+- [x] **测试文本高亮渲染(10K 文本上限防主线程冻结)** — ☑ highlightSegments 分段 + 防护测试
+- [x] **非法正则 → invalid-input;空 pattern → invalid-input** — ☑
+- [x] **可手输自定义正则 + flags(g/i/m,经通道透传)** — ☑ 页面/worker 适配
+- [~] 灾难性回溯正则仍可能慢(务实缓解:10K 上限+guard,完整超时方案留待后续) — parked
+
+### testdata-gen(测试数据生成)
+- [x] **建表 SQL 解析(表名/列名/类型;括号深度切分保护 ENUM;跳过约束行;IF NOT EXISTS/无反引号兼容)** — ☑ test/testdata-gen.test.ts 9 用例
+- [x] **类型造数(INT/VARCHAR 限长/TEXT 中文/DATE/DATETIME/FLOAT/BOOL/ENUM)** — ☑
+- [x] **智能列名(email/phone/name/id 递增|UUID/url/address/status/created_at)** — ☑
+- [x] **行数 1-1000 / NULL 比例 0-50% 边界校验** — ☑
+- [x] **解析实时反馈(走 worker)+ 生成按钮(本地直调,编辑 SQL 回解析视图)** — ☑ 页面双视图
+- [~] NOT NULL 列也可能产 NULL;status 智能造数忽略列类型(plan 取舍) — parked
+
+## 验证记录(第二批 2026-08-25)
+
+- `pnpm test`:18 文件 / 114 用例全部通过
 - `pnpm lint` / `pnpm typecheck`:全绿
 - `pnpm build:web` + `node scripts/check-web-purity.mjs`:web purity OK
 
