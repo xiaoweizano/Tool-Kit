@@ -28,7 +28,7 @@ export function autoFillDefaults(sql: string): string[] {
 }
 
 export function unfillLiterals(sql: string): ToolResult<string> {
-  // 字符串 'xx' → ?,数值 → ?;引号内若含转义单引号先折叠,避免误拆
+  // 字符串 'xx' → ?,数值 → ?
   let out = sql
   out = out.replace(/'.*?'/g, '?')
   out = out.replace(/\b\d+(\.\d+)?\b/g, '?')
