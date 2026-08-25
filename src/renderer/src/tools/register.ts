@@ -7,6 +7,7 @@ import { IdIcon } from '@tools/id-generator/icon'
 import { SqlBuilderIcon } from '@tools/sql-builder/icon'
 import { RegexIcon } from '@tools/regex-generator/icon'
 import { TestDataIcon } from '@tools/testdata-gen/icon'
+import { MdWordIcon } from '@tools/md-word/icon'
 
 // lazy 放在 register.ts 而非页面 index.tsx,避免页面自引用自身模块的循环导入
 const JsonParserPage = lazy(() => import('@tools/json-parser'))
@@ -16,6 +17,7 @@ const IdGeneratorPageLazy = lazy(() => import('@tools/id-generator'))
 const SqlBuilderPageLazy = lazy(() => import('@tools/sql-builder'))
 const RegexGeneratorPageLazy = lazy(() => import('@tools/regex-generator'))
 const TestDataGenPageLazy = lazy(() => import('@tools/testdata-gen'))
+const MdWordPageLazy = lazy(() => import('@tools/md-word'))
 
 // 加一个工具 = 在此数组追加一行(实现接口 + 目录),导航/路由自动生效
 export const tools: ToolDescriptor[] = [
@@ -52,6 +54,11 @@ export const tools: ToolDescriptor[] = [
   {
     id: 'testdata-gen', name: '测试数据生成', icon: TestDataIcon,
     route: '/tools/testdata-gen', component: TestDataGenPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'md-word', name: 'Markdown↔Word', icon: MdWordIcon,
+    route: '/tools/md-word', component: MdWordPageLazy,
     capability: { offline: true }
   }
 ]
