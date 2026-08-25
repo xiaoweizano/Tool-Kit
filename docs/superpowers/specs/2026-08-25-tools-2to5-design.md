@@ -32,7 +32,12 @@ React 18 + TS 5 + zustand + Comlink Worker + Vitest;Tailwind 4 + daisyUI 5（已
 
 多输入工具(占位符/租户 SQL)把输入封装为对象:`Transform<InputObj, string, Opts>`,经 `useLiveTransform<InputObj, string>` 传入。
 
-**关键差异**:id-generator 是按钮触发型(无"粘贴即出"),**不经 useLiveTransform / worker 通道**,页面直接本地调用纯函数生成。
+**关键差异**:
+- **输出统一为 `ToolResult<string>`**:`TriStateOutput` 只接受 `ToolResult<string>`(按 `split('\n')` 渲染),故 4 个工具的 transform 全部返回字符串化文本,页面直接喂给 TriStateOutput,不改组件。
+- **`useLiveTransform` 用 `String(v)===''` 判空**:对对象输入失效。故:
+  - **单输入工具**(`date-converter`)走 `useLiveTransform<string, string>`。
+  - **id-generator** 是按钮触发型(无"粘贴即出"),**不经 useLiveTransform / worker 通道**,页面直接本地调用纯函数生成,无防抖。
+  - **多输入工具**(`sql-placeholder`、`sql-builder`)输入为 `{ sql, params }` / `{ tenants, sqls }` 对象,**不经 useLiveTransform**:页面本地维护各 textarea 的文本 state,定时合成对象,用共享 hook `useMultiFieldTransform`(本地防抖 ~150ms + 直调 `runTransform(id, {...}, opts)` 直通 worker + 双字段空态判断),不改 `useLiveTransform` 基座。
 
 ## 工具 2:`date-converter` 时间戳互转
 
@@ -52,7 +57,7 @@ React 18 + TS 5 + zustand + Comlink Worker + Vitest;Tailwind 4 + daisyUI 5（已
   - **自动生成默认值**:`autoFillDefaults(sql, mode): { params: string[] }` 一键用默认值填满所有 `?`(字符串 `'p_1'`…、数字递增 1、bool `true`/`false`、null),用户可手动改
 - **反向** `unfillLiterals(sql): ToolResult<string>`:把字符串字面值/数字换回 `?`
 - **格式化** `formatSql(sql): ToolResult<string>`:轻量缩进(关键字换行+缩进 +多空格压单空格)。替换后的 SQL 可一键格式化
-- 走 `useLiveTransform<{sql, params}, string>` 通道
+- 多输入:页面本地两个 textarea(SQL/参数)经 `useMultiFieldTransform` 合成 `{ sql, params }` 直调 worker
 
 ## 工具 4:`id-generator` ID 生成（按钮触发）
 
@@ -85,7 +90,21 @@ React 18 + TS 5 + zustand + Comlink Worker + Vitest;Tailwind 4 + daisyUI 5（已
     ```
   - 空租户/空 SQL → EMPTY 引导;SQL 缺 `;` 自动补
 - **输出**:TriStateOutput 展示完整字符串,一键复制/导出
-- 走 `useLiveTransform<{tenants, sqls}, string>` 通道
+- 多输入:页面本地两个 textarea(租户/ SQL)经 `useMultiFieldTransform` 合成 `{ tenants, sqls }` 直调 worker
+
+## 共享 hook:`useMultiFieldTransform`
+
+`src/renderer/src/core/useMultiFieldTransform.ts`,供多输入工具(sql-placeholder / sql-builder)复用,不改 `useLiveTransform` 基座:
+
+```ts
+function useMultiFieldTransform<I, O>(toolId: string, empty: (input: I) => boolean): {
+  input: I; setField: (patch: Partial<I>) => void;
+  phase: 'idle' | 'running' | 'done'; result: ToolResult<O> | null
+}
+```
+- 页面维护对象 input 的一或多个 string 字段;`setField(patch)` 合并字段并触发 ~150ms 防抖
+- 防抖后:若 `empty(input)`(所有字段空白)→ `{ result: null, phase: 'idle' }`;否则 `runTransform(toolId, input, opts)` 直通 worker
+- 序列号守卫丢弃过期结果(仿 useLiveTransform);通道异常映射为 `unsupported` 错误 ToolResult
 
 ## 错误处理（统一,无静默失败）
 
