@@ -52,3 +52,16 @@ describe('REGEX_LIBRARY 模板库 golden(每条可编译且与示例匹配)', ()
     expect(REGEX_LIBRARY.length).toBeGreaterThanOrEqual(20)
   })
 })
+
+describe('防护边界', () => {
+  it('超长文本跳过高亮(纯文本单段)', () => {
+    const big = 'a'.repeat(10_001)
+    const s = highlightSegments('a', 'g', big)
+    expect(s.segments).toEqual([{ text: big, matched: false }])
+  })
+  it('guard 截断在输出中提示', () => {
+    const r = matchRegex({ pattern: 'a', flags: 'g', text: 'a'.repeat(10_005) })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(r.data).toContain('已截断')
+  })
+})

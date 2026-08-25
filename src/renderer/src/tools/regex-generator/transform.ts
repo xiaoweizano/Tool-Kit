@@ -45,18 +45,24 @@ export function matchRegex(input: { pattern: string; flags: string; text: string
   const hits: string[] = []
   let m: RegExpExecArray | null
   let guard = 0
+  let truncated = false
   while ((m = re.exec(text)) !== null) {
     hits.push(`第 ${hits.length + 1} 处 [${m.index}-${m.index + m[0].length}] ${m[0] === '' ? '(空串匹配)' : m[0]}`)
     if (m[0] === '') re.lastIndex++ // 防空匹配死循环
-    if (++guard > 10000) break // 超长文本兜底
+    if (++guard > 10000) { truncated = true; break } // 超长文本兜底
   }
   if (hits.length === 0) return { status: 'ok', data: '无匹配(正则合法,但测试文本中没有命中)' }
-  return { status: 'ok', data: [`匹配 ${hits.length} 处:`, ...hits].join('\n') }
+  const lines = [`匹配 ${hits.length} 处:`, ...hits]
+  if (truncated) lines.push('(超过 10000 处已截断)')
+  return { status: 'ok', data: lines.join('\n') }
 }
+
+const HIGHLIGHT_TEXT_LIMIT = 10_000
 
 export function highlightSegments(
   pattern: string, flags: string, text: string
 ): { segments: { text: string; matched: boolean }[] } {
+  if (text.length > HIGHLIGHT_TEXT_LIMIT) return { segments: [{ text, matched: false }] }
   const re = pattern.trim() ? buildRegex(pattern, flags) : null
   if (!re) return { segments: [{ text, matched: false }] }
   const segments: { text: string; matched: boolean }[] = []

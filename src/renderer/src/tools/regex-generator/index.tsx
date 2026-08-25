@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMultiFieldTransform } from '@core/useMultiFieldTransform'
 import { CopyButton } from '@components/CopyButton'
 import { TriStateOutput } from '@components/TriStateOutput'
@@ -25,7 +25,10 @@ export default function RegexGeneratorPage(): JSX.Element {
     setField({ pattern: t.pattern, flags: f, text: t.example })
   }
   const current = REGEX_LIBRARY.find((t) => t.pattern === pattern)
-  const segments = pattern.trim() && text ? highlightSegments(pattern, flags, text).segments : []
+  const segments = useMemo(
+    () => (pattern.trim() && text ? highlightSegments(pattern, flags, text).segments : []),
+    [pattern, flags, text]
+  )
 
   return (
     <div className="mx-auto max-w-5xl p-6">
