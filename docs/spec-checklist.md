@@ -118,6 +118,12 @@
 - [x] **解析实时反馈(走 worker)+ 生成按钮(本地直调,编辑 SQL 回解析视图)** — ☑ 页面双视图
 - [~] NOT NULL 列也可能产 NULL;status 智能造数忽略列类型(plan 取舍) — parked
 
+## 验证记录(第一批 2026-08-25)
+
+- `pnpm test`:16 文件 / 72 用例全部通过
+- `pnpm lint` / `pnpm typecheck`:全绿
+- `pnpm build:web` + `node scripts/check-web-purity.mjs`:web purity OK
+
 ## 验证记录(第二批 2026-08-25)
 
 - `pnpm test`:18 文件 / 114 用例全部通过

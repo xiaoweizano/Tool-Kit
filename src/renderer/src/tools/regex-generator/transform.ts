@@ -40,6 +40,8 @@ function buildRegex(pattern: string, flags: string): RegExp | null {
 export function matchRegex(input: { pattern: string; flags: string; text: string }): ToolResult<string> {
   const { pattern, flags, text } = input
   if (!pattern.trim()) return { status: 'error', kind: 'invalid-input', message: '正则表达式为空' }
+  if (text.length > 200_000)
+    return { status: 'error', kind: 'invalid-input', message: `文本 ${text.length} 字符超出上限 200000,请截断后重试(防灾难性回溯冻结转换通道)` }
   const re = buildRegex(pattern, flags)
   if (!re) return { status: 'error', kind: 'invalid-input', message: '正则表达式语法错误,请检查' }
   const hits: string[] = []

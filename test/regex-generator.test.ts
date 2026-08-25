@@ -64,4 +64,9 @@ describe('防护边界', () => {
     expect(r.status).toBe('ok')
     if (r.status === 'ok') expect(r.data).toContain('已截断')
   })
+  it('超长文本(>200K)拒绝执行并提示', () => {
+    const r = matchRegex({ pattern: 'a', flags: 'g', text: 'a'.repeat(200_001) })
+    expect(r.status).toBe('error')
+    if (r.status === 'error') { expect(r.kind).toBe('invalid-input'); expect(r.message).toContain('200000') }
+  })
 })
