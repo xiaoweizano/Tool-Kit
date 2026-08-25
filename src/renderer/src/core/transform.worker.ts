@@ -5,6 +5,7 @@ import { convertTimestamp } from '@tools/date-converter/transform'
 import { fillPlaceholders } from '@tools/sql-placeholder/transform'
 import { assembleTenantSql } from '@tools/sql-builder/transform'
 import { matchRegex } from '@tools/regex-generator/transform'
+import { parseCreateTable } from '@tools/testdata-gen/transform'
 
 const registry = new Map<string, Transform<unknown, unknown, TransformOpts>>()
 // 注册行示例(加工具在此追加 import + 一行注册)。
@@ -21,6 +22,9 @@ registry.set('sql-builder', ((input: { tenants: string; sqls: string }) => {
 }) as Transform<unknown, unknown, TransformOpts>)
 registry.set('regex-generator', ((input: { pattern: string; flags: string; text: string }) =>
   matchRegex({ pattern: input?.pattern ?? '', flags: input?.flags || 'g', text: input?.text ?? '' })
+) as Transform<unknown, unknown, TransformOpts>)
+registry.set('testdata-gen', ((input: { sql: string }) =>
+  parseCreateTable(input?.sql ?? '')
 ) as Transform<unknown, unknown, TransformOpts>)
 
 const unsupported = (id: string): ToolResult<never> => ({
