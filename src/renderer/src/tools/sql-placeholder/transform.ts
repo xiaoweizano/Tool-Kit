@@ -24,7 +24,8 @@ export function fillPlaceholders(input: { sql: string; params: string[] }): Tool
 
 export function autoFillDefaults(sql: string): string[] {
   const n = (sql.match(/\?/g) ?? []).length
-  return Array.from({ length: n }, (_, i) => `'arg_${i + 1}'`)
+  // 裸值,不带引号——fillPlaceholders 的 literalize 会按类型包一层单引号
+  return Array.from({ length: n }, (_, i) => `arg_${i + 1}`)
 }
 
 export function unfillLiterals(sql: string): ToolResult<string> {

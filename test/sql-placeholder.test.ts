@@ -20,8 +20,12 @@ describe('fillPlaceholders 基础替换', () => {
 })
 
 describe('autoFillDefaults', () => {
-  it('为每个 ? 生成字符串默认值', () => {
-    expect(autoFillDefaults('a=? b=?')).toEqual(["'arg_1'", "'arg_2'"])
+  it('为每个 ? 生成裸字符串默认值(不预带引号)', () => {
+    expect(autoFillDefaults('a=? b=?')).toEqual(['arg_1', 'arg_2'])
+  })
+  it('一键默认值经 fillPlaceholders 只包一层单引号(不出现三引号)', () => {
+    const r = fillPlaceholders({ sql: "SELECT * FROM t WHERE a=? AND b=?", params: autoFillDefaults('a=? b=?') })
+    expect(r).toEqual({ status: 'ok', data: "SELECT * FROM t WHERE a='arg_1' AND b='arg_2'" })
   })
 })
 
