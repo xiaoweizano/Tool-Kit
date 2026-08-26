@@ -130,6 +130,30 @@
 - `pnpm lint` / `pnpm typecheck`:全绿
 - `pnpm build:web` + `node scripts/check-web-purity.mjs`:web purity OK
 
+## tools 8-10(2026-08-25 收官批次)
+
+### md-word(Markdown ↔ Word)
+- [x] **md→Word 生成 .docx(标题/粗斜体/行内代码/代码块/列表/表格/链接/分隔线)** — ☑ test/markdown.test.ts(parseMarkdown 各元素 + buildDocxDocument 冒烟)
+- [x] **Word→md(mammoth 解析 + turndown 转 md,表格经 gfm 保真)** — ☑ htmlToMd 测试
+- [x] **文件上传/下载(FileDrop + downloadFile)** — ☑ 页面手动目验(.docx 打开验证,待人工确认)
+
+### excel-md(Excel ↔ Markdown)
+- [x] **Excel→md(上传 xlsx,首个 sheet 转管道表格)** — ☑ test/excel-md.test.ts(sheetToMarkdown)
+- [x] **md→Excel(粘贴表格生成 .xlsx 下载)** — ☑ markdownToSheet
+- [x] **列数不一/空表/非表格 → invalid-input** — ☑
+- [~] 多 sheet 仅取首个(提示说明) — plan 取舍
+
+### linux-manual(Linux 命令大全)
+- [x] **500 条本地库(10 类 × 50,含名称/说明/选项/示例,跨类无重复)** — ☑ test/linux-data.test.ts(数量/schema/唯一/排序)
+- [x] **名称/说明实时搜索 + 分类侧栏** — ☑ test/linux-search.test.ts(searchLinux)
+- [x] **命令卡片展开看选项与示例** — ☑ 页面
+- [~] 命令选项准确性为人工知识(结构测试守门,抽查 6 条正确;全量逐条目验待人工) — 待人工
+
+## 验证记录(收官批次 2026-08-25)
+
+- `pnpm test`:23 文件 / 140 用例全部通过(10 工具全绿)
+- `pnpm lint` / `pnpm typecheck` / `pnpm build:web` / `node scripts/check-web-purity.mjs`:全绿(新增库均无 electron 引用)
+
 ## 待人工项汇总(7 条)
 
 1. 联网标识(tool-registry:待首个联网工具落地)
