@@ -23,6 +23,10 @@ typography:
   body:
     fontFamily: "MiSans, HarmonyOS Sans SC, Microsoft YaHei UI, PingFang SC, sans-serif"
     fontWeight: 400
+  mono-data:
+    fontFamily: "JetBrains Mono, Cascadia Code, Consolas, monospace"
+    fontSize: "13px"
+    fontWeight: 400
   label:
     fontFamily: "JetBrains Mono, Cascadia Code, Consolas, monospace"
     fontSize: "11px"

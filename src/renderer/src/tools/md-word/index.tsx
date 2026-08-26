@@ -49,7 +49,15 @@ export default function MdWordPage(): JSX.Element {
             <textarea className="h-56 w-full resize-none border-0 bg-transparent p-4 font-mono text-[13px] leading-relaxed outline-none"
               placeholder="粘贴 Markdown,支持标题/粗斜体/代码块/列表/表格/链接…" value={md} onChange={(e) => setMd(e.target.value)} />
           </section>
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label className="btn btn-outline btn-xs cursor-pointer">
+              上传 .md 文件
+              <input type="file" accept=".md,.markdown,.txt" className="hidden" onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) void f.text().then((t) => { setMd(t); setMdResult({ ok: true, message: `已载入 ${f.name}` }) })
+                e.target.value = ''
+              }} />
+            </label>
             <button className="btn btn-sm btn-primary" onClick={() => void toDocx()}>生成 .docx</button>
             {mdResult && <span className={`font-mono text-[11px] ${mdResult.ok ? 'text-success' : 'text-error'}`}>{mdResult.message}</span>}
           </div>
