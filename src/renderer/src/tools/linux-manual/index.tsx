@@ -43,6 +43,12 @@ export default function LinuxManualPage(): JSX.Element {
                 </button>
                 {open === e.id && (
                   <div className="mt-2 pb-1">
+                    {e.syntax && (
+                      <div className="mb-2 rounded bg-base-100 px-2 py-1.5 font-mono text-[12px]">
+                        <span className="mr-2 text-warning">$</span>
+                        <span className="text-base-content">{e.syntax}</span>
+                      </div>
+                    )}
                     {e.options && e.options.length > 0 && (
                       <ul className="space-y-1">
                         {e.options.map((o) => (

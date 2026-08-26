@@ -21,7 +21,7 @@ describe('linux 数据批 A(5 类)', () => {
     expect(catTextEntries).toHaveLength(50)
     expect(catFindEntries).toHaveLength(50)
     expect(catProcessEntries).toHaveLength(50)
-    expect(catNetworkEntries).toHaveLength(50)
+    expect(catNetworkEntries).toHaveLength(52) // +rz/sz
   })
   it('条目 schema 完整(id/name/desc/category 非空, category 属 CATEGORIES)', () => {
     for (const e of batchA.flat()) {
