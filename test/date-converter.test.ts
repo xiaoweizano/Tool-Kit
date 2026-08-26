@@ -46,6 +46,58 @@ describe('convertTimestamp 非法输入', () => {
   })
 })
 
+describe('自定义格式 formatDate / parseWithFormat', () => {
+  it('yyyyMMdd 输出', async () => {
+    const { formatDate } = await import('@tools/date-converter/transform')
+    expect(formatDate(new Date(2026, 7, 26, 14, 5, 9), 'yyyyMMdd')).toBe('20260826')
+  })
+  it('全 token 输出', async () => {
+    const { formatDate } = await import('@tools/date-converter/transform')
+    expect(formatDate(new Date(2026, 7, 26, 14, 5, 9, 123), 'yyyy-MM-dd HH:mm:ss.SSS')).toBe('2026-08-26 14:05:09.123')
+  })
+  it('短 token 与字面量(yy/M/d H:m:s)', async () => {
+    const { formatDate } = await import('@tools/date-converter/transform')
+    expect(formatDate(new Date(2026, 0, 2, 3, 4, 5), 'yy/M/d H:m:s')).toBe('26/1/2 3:4:5')
+  })
+  it('按格式解析 yyyyMMdd', async () => {
+    const { parseWithFormat } = await import('@tools/date-converter/transform')
+    const d = parseWithFormat('20260826', 'yyyyMMdd')
+    expect(d?.getFullYear()).toBe(2026)
+    expect(d?.getMonth()).toBe(7)
+    expect(d?.getDate()).toBe(26)
+  })
+  it('按格式解析含时分秒', async () => {
+    const { parseWithFormat } = await import('@tools/date-converter/transform')
+    const d = parseWithFormat('2026/08/26 09:30:00', 'yyyy/MM/dd HH:mm:ss')
+    expect(d?.getHours()).toBe(9)
+    expect(d?.getMinutes()).toBe(30)
+  })
+  it('非法月份解析失败返回 null', async () => {
+    const { parseWithFormat } = await import('@tools/date-converter/transform')
+    expect(parseWithFormat('20261301', 'yyyyMMdd')).toBeNull()
+  })
+})
+
+describe('convertTimestamp 自定义格式视图与互转', () => {
+  it('标准日期输入 + format 输出自定义行', () => {
+    const r = convertTimestamp('2026-08-26', { format: 'yyyyMMdd' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(r.data).toContain('自定义格式:20260826')
+  })
+  it('自定义格式输入可被解析互转(非标准日期串)', () => {
+    const r = convertTimestamp('20260826', { format: 'yyyyMMdd' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('自定义格式:20260826')
+      expect(r.data).toContain('Unix 秒:')
+    }
+  })
+  it('无 format 时行为不变(无自定义行)', () => {
+    const r = convertTimestamp('0')
+    if (r.status === 'ok') expect(r.data).not.toContain('自定义格式')
+  })
+})
+
 describe('convertTimestamp 互转辅助纯函数', () => {
   it('dateStrToUnix 返回秒', async () => {
     const { dateStrToUnix } = await import('@tools/date-converter/transform')

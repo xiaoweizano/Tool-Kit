@@ -107,6 +107,7 @@ ToolKit 是一块带电的开发者工作台:10 个工具像线路板上的节�
 ### Hierarchy
 - **Title** (700, 20px/1.25, 无):工具页主标题 `text-2xl font-bold`,页面唯一视觉主角。
 - **Body** (400, 14px/1.5, 无):说明、选项描述、一般内容。
+- **Mono Data** (400, 13px/1.6, mono):工具输入/输出数据区(textarea、格式输入、代码/JSON 展示)的等宽数据文字——输入输出是同字号的连续数据流。
 - **Label** (400, 11px, 0.3em 字距):分区标签与元信息,一律 `font-mono text-[11px] tracking-[0.3em] text-neutral`——这是全系统的标注语法。
 
 ### Named Rules
