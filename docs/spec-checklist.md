@@ -149,6 +149,30 @@
 - [x] **命令卡片展开看选项与示例** — ☑ 页面
 - [~] 命令选项准确性为人工知识(结构测试守门,抽查 6 条正确;全量逐条目验待人工) — 待人工
 
+## tools 11-12(2026-08-26 新增)
+
+### batch-transform(批处理值转换)
+- [x] **混合输入解析(每行/逗号/混合,中英逗号)** — ☑ test/batch-transform.test.ts(13 用例)
+- [x] **20 种有序操作管线(顺序即应用顺序,可增删重排)** — ☑ 包裹五式/前后缀/去特殊字符(自定义保留集)/截取(前/后)/trim/去空行/去重/排序(字典/数字)/大小写/全半角/编号/URL/Base64 编解码
+- [x] **5 种输出格式(逗号/JSON 数组/SQL IN/换行/自定义分隔符)** — ☑
+- [x] **纯函数可测 + 注册 offline** — ☑ worker 通道接线,路由 /tools/batch-transform
+
+### translate(翻译·首个联网增强)
+- [x] **多语言互译(中/英/日/韩/俄突出 + 法/德/西,源语言自动检测+手动覆盖)** — ☑ test/translate-engines.test.ts(16 用例)
+- [x] **五引擎适配器(MyMemory 免费默认/百度/DeepL/有道/谷歌,MD5 RFC 向量锁定 + node crypto 差分 20/20)** — ☑
+- [x] **多行逐行翻 + Promise.all 行序收集,单行失败仅标记** — ☑ test/translate-hook.test.ts(7 用例)
+- [x] **15s AbortController 超时(无 UI 挂起)+ 单行 >450 字符报错定位行号** — ☑(CEO 评审决定)
+- [x] **CORS 修正:桌面经 net-fetch IPC 直连全引擎,Web 仅 MyMemory(browserOk 标记「仅桌面版」)** — ☑ electron main/preload + httpFetch 适配器
+- [x] **API key 设置区(按引擎分字段,localStorage 持久化)** — ☑ test/translate-keys.test.ts
+- [x] **NET 徽标(capability network:'translate',导航/首页自动)** — ☑ 首个联网工具点亮
+- [x] **CSP connect-src 放行 5 翻译域** — ☑ build:web + purity 通过
+- [~] 真实翻译联调(各引擎实 key 请求)与桌面 IPC 实测 — 待人工目验
+
+## 验证记录(tools 11-12 批次 2026-08-26)
+
+- `pnpm test`:28 文件 / 217 用例全部通过
+- `pnpm lint` / `pnpm typecheck` / `pnpm build:web` / `check-web-purity`:全绿
+
 ## 验证记录(收官批次 2026-08-25)
 
 - `pnpm test`:23 文件 / 140 用例全部通过(10 工具全绿)
