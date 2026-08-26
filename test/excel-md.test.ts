@@ -10,9 +10,9 @@ describe('sheetToMarkdown', () => {
     const r = sheetToMarkdown([])
     expect(r.status).toBe('error')
   })
-  it('列数不一 → 错误', () => {
-    const r = sheetToMarkdown([['A'], [1, 2]])
-    expect(r.status).toBe('error')
+  it('列数不齐的行以空单元格补齐(容错真实 Excel)', () => {
+    const r = sheetToMarkdown([['A', 'B', 'C'], [1]])
+    expect(r).toEqual({ status: 'ok', data: '| A | B | C |\n|---|---|---|\n| 1 |  |  |' })
   })
 })
 

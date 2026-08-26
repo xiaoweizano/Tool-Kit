@@ -2,17 +2,18 @@ import type { ToolResult } from '@core/types'
 
 export function sheetToMarkdown(aoa: unknown[][]): ToolResult<string> {
   if (!aoa || aoa.length === 0) return { status: 'error', kind: 'invalid-input', message: '工作表为空' }
-  const cols = aoa[0].length
+  const cols = Math.max(...aoa.map((r) => r.length))
   if (cols === 0) return { status: 'error', kind: 'invalid-input', message: '工作表无列' }
-  for (const row of aoa) if (row.length !== cols)
-    return { status: 'error', kind: 'invalid-input', message: `列数不一致(第 ${aoa.indexOf(row) + 1} 行)`, position: aoa.indexOf(row) }
   const fmt = (v: unknown): string => {
     if (v === null || v === undefined) return ''
     const s = String(v)
     return s.includes('|') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s
   }
   const esc = (c: string): string => c.replace(/\|/g, '\\|')
-  const rows = aoa.map((row) => `| ${row.map((c) => esc(fmt(c))).join(' | ')} |`)
+  const rows = aoa.map((row) => {
+    const cells = Array.from({ length: cols }, (_, i) => (i < row.length ? esc(fmt(row[i])) : ''))
+    return `| ${cells.join(' | ')} |`
+  })
   const sep = '|' + Array(cols).fill('---').join('|') + '|'
   return { status: 'ok', data: [rows[0], sep, ...rows.slice(1)].join('\n') }
 }
