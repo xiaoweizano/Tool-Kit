@@ -6,8 +6,8 @@ export function sheetToMarkdown(aoa: unknown[][]): ToolResult<string> {
   if (cols === 0) return { status: 'error', kind: 'invalid-input', message: '工作表无列' }
   const fmt = (v: unknown): string => {
     if (v === null || v === undefined) return ''
-    // 换行转 <br> 保持表格结构;竖线由 esc 转义,不用引号包裹
-    return String(v).replace(/\n/g, '<br>')
+    // 单元格内换行(\r\n/\n/\r)折叠为空格,保证表格每行单行有效;竖线由 esc 转义,不用引号包裹
+    return String(v).replace(/\r\n/g, '\n').replace(/[\n\r]+/g, ' ')
   }
   const esc = (c: string): string => c.replace(/\|/g, '\\|')
   const rows = aoa.map((row) => {
