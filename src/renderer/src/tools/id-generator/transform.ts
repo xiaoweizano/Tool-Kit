@@ -46,8 +46,8 @@ export function generateIds(
   const sep = opts?.sep ?? '\n'
   const out: string[] = []
   for (let i = 0; i < count; i++) {
-    if (type === 'uuid') out.push(uuidV4())
-    else if (type === 'snowflake') out.push(snowflake().toString())
+    if (type === 'uuid') out.push(prefix + uuidV4())
+    else if (type === 'snowflake') out.push(prefix + snowflake().toString())
     else if (type === 'sequence') out.push(nextSeq(prefix))
     else out.push(prefix + shortCode(8))
   }

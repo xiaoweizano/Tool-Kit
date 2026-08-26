@@ -31,6 +31,12 @@ describe('generateIds', () => {
       expect(ids[0]).toBe(`t_${Number(before.data) + 1}`)
     }
   })
+  it('前缀对 uuid/snowflake 也生效', () => {
+    const u = generateIds('uuid', 2, { prefix: 'u_' })
+    const s = generateIds('snowflake', 2, { prefix: 's_' })
+    if (u.status === 'ok') u.data.split('\n').forEach((x) => expect(x.startsWith('u_')).toBe(true))
+    if (s.status === 'ok') s.data.split('\n').forEach((x) => expect(x.startsWith('s_')).toBe(true))
+  })
   it('shortcode 定长字母数字', () => {
     const r = generateIds('shortcode', 4, {})
     if (r.status === 'ok') r.data.split('\n').forEach((s) => { expect(s).toMatch(/^[A-Za-z0-9]{8}$/) })
