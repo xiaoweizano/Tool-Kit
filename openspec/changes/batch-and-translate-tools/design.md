@@ -71,11 +71,20 @@ Input(多行) → 防抖 → useTranslate → fetch(引擎适配) → parseRespo
 
 **决策**:默认"自动"(MyMemory 自带 `langpair=Autodetect|目标`);UI 下拉可手动选(中/英/日/韩/俄/法/德/西/更多)。目标语言默认英文(中文输入时)或中文(非中文输入时),可改。
 
-### 6. CSP 放宽
+### 6. CSP 放宽与 CORS 现实(writing-plans 阶段修正,2026-08-26)
 
-**决策**:`connect-src` 追加 `https://api.mymemory.translated.net`(默认引擎)。**用户自配 key 的引擎域名在运行时通过 `<meta>` CSP 无法动态追加——改为所有可选引擎域名一次性加入 CSP**(百度 fanyi-api.baidu.com / DeepL api-free.deepl.com / 有道 openapi.youdao.com / 谷歌 translation.googleapis.com)。
+**CORS 现实**:百度/DeepL/有道/谷歌的翻译 API **不返回 CORS 头**,浏览器直接 fetch 必失败;仅 MyMemory/LibreTranslate 可 Web 直连。
 
-**为什么**:meta CSP 无法运行时改;一次性列出避免用户配 key 后工具失效。桌面 Electron 端 CSP 同样处理。
+**决策**:
+- **HTTP 适配器 `httpFetch(url, init)`**:桌面端(`window.toolkitAPI.netFetch` 存在)走 Electron main 的 `net-fetch` IPC(Electron `net` 模块,无 CORS 限制);Web 端走浏览器 fetch(CORS 生效)。与既有 `checkUpdate` 的 toolkitAPI 适配模式一致,renderer 仍不 import electron。
+- **引擎标注 `browserOk`**:MyMemory=true;百度/DeepL/有道/谷歌=false。Web 端这些引擎在下拉中禁用并标注「仅桌面版」;桌面端全量可用。
+- **CSP `connect-src` 一次性追加全部引擎域名**(Web 端仅 MyMemory 实际使用;桌面 meta CSP 同样列出)。
+
+**改动面新增**:`electron/main.ts`(+`net-fetch` IPC)、`electron/preload.ts`(+`netFetch`)。preload 白名单仍是最小暴露。
+
+### 7. CSP 域名清单
+
+`connect-src` 追加:`https://api.mymemory.translated.net https://fanyi-api.baidu.com https://api-free.deepl.com https://openapi.youdao.com https://translation.googleapis.com`
 
 ### 7. NET 徽标与 capability 扩展
 
