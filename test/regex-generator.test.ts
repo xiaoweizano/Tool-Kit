@@ -48,8 +48,8 @@ describe('REGEX_LIBRARY 模板库 golden(每条可编译且与示例匹配)', ()
       expect(new RegExp(`^(?:${t.pattern})$`, t.flags).test(t.example)).toBe(true)
     })
   }
-  it('至少 20 条', () => {
-    expect(REGEX_LIBRARY.length).toBeGreaterThanOrEqual(20)
+  it('至少 28 条', () => {
+    expect(REGEX_LIBRARY.length).toBeGreaterThanOrEqual(28)
   })
 })
 
