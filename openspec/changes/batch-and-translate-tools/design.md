@@ -54,6 +54,11 @@ Input(多行) → 防抖 → useTranslate → fetch(引擎适配) → parseRespo
 
 **为什么**:网络不可纯函数化,但解析/构造/映射可以;这样测试覆盖纯层(单测),网络层薄(hook 集成测试可选)。
 
+**CEO 评审追加决定(HOLD SCOPE,2026-08-26)**:
+- **行序保证**:多行翻译用 `Promise.all` 按索引收集,结果恒按行序对应;单行失败仅标记该行,不阻塞其他行
+- **请求超时**:fetch 包 `AbortController`,15 秒超时 → 错误 ToolResult「翻译请求超时,请重试或换引擎」(防 UI 挂起)
+- **超长行**:单行超过 450 字符 → 报错并定位行号(不静默截断、不分块),提示拆行重试
+
 **替代方案**:把 fetch 也放 worker——worker 可 fetch,但破坏"纯函数 transform"契约且增加复杂度;Electron main 转发——v0.1 不需要,Web 端也无法用。
 
 ### 4. 引擎适配器:注册表模式
