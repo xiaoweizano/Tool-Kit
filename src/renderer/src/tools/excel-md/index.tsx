@@ -54,6 +54,11 @@ export default function ExcelMdPage(): JSX.Element {
           <div className="mt-4">
             <TriStateOutput result={mdOut} phase="done" emptyHint="上传 .xlsx 后此处显示 Markdown 表格(可复制)" />
           </div>
+          {mdOut?.status === 'ok' && (
+            <div className="mt-3">
+              <button className="btn btn-outline btn-xs" onClick={() => downloadFile('output.md', [mdOut.data], 'text/markdown')}>下载 .md</button>
+            </div>
+          )}
         </>
       ) : (
         <>
