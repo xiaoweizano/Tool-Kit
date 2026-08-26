@@ -31,10 +31,10 @@ export default function SqlBuilderPage(): JSX.Element {
       </section>
       <section className="mt-3 border border-base-300 bg-base-200/40">
         <span className="ml-3 -mt-2 inline-block bg-base-100 px-1 font-mono text-[11px] tracking-widest text-neutral">SQL(每条一行)</span>
-        <textarea className="h-40 w-full resize-none border-0 bg-transparent p-4 font-mono text-[13px] leading-relaxed outline-none" placeholder="粘贴 SQL(每条一行),缺分号自动补" value={sqls} onChange={(e) => setBoth('sqls', e.target.value)} />
+        <textarea className="h-40 w-full resize-none border-0 bg-transparent p-4 font-mono text-[13px] leading-relaxed outline-none" placeholder="粘贴 SQL(每条一行),自动为表名加租户前缀(如 low_code_menus → 租户.low_code_menus)" value={sqls} onChange={(e) => setBoth('sqls', e.target.value)} />
       </section>
       <div className="mt-4">
-        <TriStateOutput result={result} phase={phase} emptyHint="填租户与 SQL,自动为每个租户组装可批量执行的 SQL…" />
+        <TriStateOutput result={result} phase={phase} emptyHint="填租户与 SQL,自动为每个租户生成表名加前缀的批量 SQL…" />
       </div>
     </div>
   )
