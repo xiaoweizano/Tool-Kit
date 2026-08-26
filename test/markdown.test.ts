@@ -30,6 +30,18 @@ describe('buildDocxDocument', () => {
     expect(doc).toBeTruthy()
     expect(typeof doc).toBe('object')
   })
+  it('标题与列表项/表格单元格的行内格式(如 **粗体**)被转换,不残留 **', async () => {
+    const { Packer } = await import('docx')
+    const JSZip = (await import('jszip')).default
+    const doc = buildDocxDocument(parseMarkdown('### **严重性: Critical**\n\n- **项目名称**: Spring Boot\n\n| **A** | B |\n|---|---|\n| **1** | 2 |'))
+    const buf = await Packer.toBuffer(doc)
+    const zip = await JSZip.loadAsync(buf)
+    const xml = await zip.file('word/document.xml')!.async('string')
+    expect(xml).toContain('严重性: Critical')
+    expect(xml).toContain('项目名称')
+    expect(xml).not.toContain('**')
+    expect(xml).toContain('<w:b') // 粗体已生效
+  })
 })
 
 describe('htmlToMd', () => {

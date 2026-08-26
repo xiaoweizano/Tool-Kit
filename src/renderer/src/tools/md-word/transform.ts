@@ -86,29 +86,34 @@ export function parseMarkdown(md: string): Block[] {
   return blocks
 }
 
+type Inline = { text: string; bold?: boolean; italic?: boolean; code?: boolean; link?: string }
+
+function runsToRuns(runs: Inline[]): TextRun[] {
+  return runs.map((r) => new TextRun({
+    text: r.text,
+    bold: r.bold,
+    italics: r.italic,
+    ...(r.code ? { font: 'Consolas' } : {})
+  }))
+}
+
 export function buildDocxDocument(blocks: Block[]): Document {
   const children: (Paragraph | Table)[] = []
   for (const b of blocks) {
     switch (b.type) {
       case 'heading': {
         const levels = [undefined, HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3, HeadingLevel.HEADING_4, HeadingLevel.HEADING_5, HeadingLevel.HEADING_6] as const
-        children.push(new Paragraph({ heading: levels[b.level] ?? HeadingLevel.HEADING_6, children: [new TextRun({ text: b.text })] }))
+        children.push(new Paragraph({ heading: levels[b.level] ?? HeadingLevel.HEADING_6, children: runsToRuns(parseInline(b.text)) }))
         break
       }
       case 'paragraph':
-        children.push(new Paragraph({ children: b.runs.map((r) => new TextRun({
-          text: r.text,
-          bold: r.bold,
-          italics: r.italic,
-          ...(r.code ? { font: 'Consolas' } : {}),
-          ...(r.link ? { children: undefined } : {})
-        })) }))
+        children.push(new Paragraph({ children: runsToRuns(b.runs) }))
         break
       case 'bulletList':
-        b.items.forEach((it) => children.push(new Paragraph({ text: it, bullet: { level: 0 } })))
+        b.items.forEach((it) => children.push(new Paragraph({ bullet: { level: 0 }, children: runsToRuns(parseInline(it)) })))
         break
       case 'orderedList':
-        b.items.forEach((it) => children.push(new Paragraph({ numbering: { reference: 'ordered-list', level: 0 }, children: [new TextRun({ text: it })] })))
+        b.items.forEach((it) => children.push(new Paragraph({ numbering: { reference: 'ordered-list', level: 0 }, children: runsToRuns(parseInline(it)) })))
         break
       case 'codeBlock':
         b.text.split('\n').forEach((ln) => children.push(new Paragraph({ children: [new TextRun({ text: ln, font: 'Consolas', size: 20 })] })))
@@ -116,8 +121,8 @@ export function buildDocxDocument(blocks: Block[]): Document {
       case 'table':
         children.push(new Table({
           rows: [
-            new TableRow({ children: b.header.map((h) => new TableCell({ children: [new Paragraph({ text: h })] })) }),
-            ...b.rows.map((row) => new TableRow({ children: row.map((c) => new TableCell({ children: [new Paragraph({ text: c })] })) }))
+            new TableRow({ children: b.header.map((h) => new TableCell({ children: [new Paragraph({ children: runsToRuns(parseInline(h)) })] })) }),
+            ...b.rows.map((row) => new TableRow({ children: row.map((c) => new TableCell({ children: [new Paragraph({ children: runsToRuns(parseInline(c)) })] })) }))
           ],
           width: { size: 100, type: WidthType.PERCENTAGE }
         }))
