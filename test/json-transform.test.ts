@@ -69,6 +69,40 @@ describe('posToLineCol', () => {
   })
 })
 
+describe('特殊格式 JSON 自动还原(真实日志粘贴)', () => {
+  it('转义引号格式(Java toString 日志)可还原解析', () => {
+    const r = o('{\\"thirdRoleIds\\":[\\"171098856505402496\\",\\"sr002\\",\\"sr013\\"],\\"thirdId\\":\\"178736529469948551\\"}')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('自动还原')
+      expect(r.data).toContain('"thirdRoleIds"')
+      expect(r.data).toContain('"178736529469948551"')
+      expect(r.data).not.toContain('\\"')
+    }
+  })
+  it('双重编码(外层带引号的字符串 JSON)可解包', () => {
+    const r = o('"{\\"a\\":1}"')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('自动解包')
+      expect(JSON.parse(r.data.split('\n').slice(1).join('\n'))).toEqual({ a: 1 })
+    }
+  })
+  it('多行转义格式走简单替换兜底', () => {
+    const r = o('{\n  \\"a\\": \\"x\\",\n  \\"b\\": [1, 2]\n}')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(r.data).toContain('"a"')
+  })
+  it('普通 JSON 字符串字面量仍直接格式化(无误提示)', () => {
+    expect(o('"hello"')).toEqual({ status: 'ok', data: '"hello"' })
+  })
+  it('无法还原的非法输入仍报 invalid-input', () => {
+    const r = o('{\\"a\\"}')
+    expect(r.status).toBe('error')
+    if (r.status === 'error') expect(r.kind).toBe('invalid-input')
+  })
+})
+
 describe('性能', () => {
   it('1MB 合法输入 <200ms', () => {
     // brief 原定 12000 条仅约 697KB(其自检 toBeGreaterThan(1_000_000) 失败),提至 18000 条使体积 >1MB。

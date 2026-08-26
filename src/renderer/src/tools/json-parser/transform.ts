@@ -26,19 +26,60 @@ function locateError(text: string, msg: string): number {
   return 0
 }
 
+interface ParseOutcome { value: unknown; hint: string | null }
+
+// 渐进式解析:直连 → 双重编码(字符串里是 JSON) → 转义引号体(日志粘贴) → 简单替换兜底
+function parseProgressive(raw: string): ParseOutcome | null {
+  const t = raw.trim()
+  if (!t) return null
+  try {
+    const v = JSON.parse(t)
+    if (typeof v === 'string') {
+      try {
+        const inner = JSON.parse(v)
+        if (inner !== null && typeof inner === 'object')
+          return { value: inner, hint: '自动解包:外层为字符串,内层是 JSON' }
+      } catch { /* 内层不是 JSON,按普通字符串字面量处理 */ }
+      return { value: v, hint: null }
+    }
+    return { value: v, hint: null }
+  } catch { /* 落入还原路径 */ }
+  try {
+    const unwrapped = JSON.parse('"' + t + '"')
+    if (typeof unwrapped === 'string') {
+      const inner = JSON.parse(unwrapped)
+      if (inner !== null && typeof inner === 'object')
+        return { value: inner, hint: '自动还原:转义引号已解除' }
+    }
+  } catch { /* 落入简单替换 */ }
+  const simple = t.replace(/\\"/g, '"')
+  if (simple !== t) {
+    try {
+      const v = JSON.parse(simple)
+      if (v !== null && typeof v === 'object')
+        return { value: v, hint: '自动还原:转义引号已解除' }
+    } catch { /* 彻底无法解析 */ }
+  }
+  return null
+}
+
 export function transformJson(input: string, opts?: JsonOpts): ToolResult<string> {
   const indent = opts?.indent ?? '2'
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(input)
-  } catch (e) {
-    const pos = locateError(input, (e as Error).message)
-    const { line, col } = posToLineCol(input, pos)
-    return { status: 'error', kind: 'invalid-input', message: `非法字符或结构错误(第 ${line} 行 第 ${col} 列)`, position: pos }
+  const outcome = parseProgressive(input)
+  if (!outcome) {
+    try {
+      JSON.parse(input)
+    } catch (e) {
+      const pos = locateError(input, (e as Error).message)
+      const { line, col } = posToLineCol(input, pos)
+      return { status: 'error', kind: 'invalid-input', message: `非法字符或结构错误(第 ${line} 行 第 ${col} 列)`, position: pos }
+    }
+    return { status: 'error', kind: 'invalid-input', message: '无法解析为 JSON(已尝试转义/嵌套自动还原)', position: 0 }
   }
   const space = indent === 'min' ? 0 : indent === 'tab' ? '\t' : Number(indent)
   try {
-    return { status: 'ok', data: JSON.stringify(parsed, null, space as never) }
+    const body = JSON.stringify(outcome.value, null, space as never)
+    return { status: 'ok', data: outcome.hint ? `(${outcome.hint})\n${body}` : body }
   } catch {
     return { status: 'error', kind: 'unsupported', structure: '循环引用', message: '输入含无法序列化的结构' }
   }

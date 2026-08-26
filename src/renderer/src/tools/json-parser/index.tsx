@@ -25,7 +25,7 @@ export default function JsonParserPage(): JSX.Element {
 
       <section className="border border-base-300 bg-base-200/40">
         <span className="ml-3 -mt-2 inline-block bg-base-100 px-1 font-mono text-[11px] tracking-widest text-neutral">INPUT · 输入</span>
-        <InputZone value={input} onChange={setInput} placeholder="粘贴 JSON 到此处,结果即刻点亮…" />
+        <InputZone value={input} onChange={setInput} placeholder="粘贴 JSON,结果即刻点亮(支持日志转义/字符串嵌套格式自动还原)…" />
       </section>
 
       <div className="flex items-center gap-2 py-3" role="toolbar">
