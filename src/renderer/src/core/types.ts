@@ -2,7 +2,7 @@ import type { ComponentType, LazyExoticComponent } from 'react'
 
 export interface ToolCapability {
   offline: boolean
-  network?: false | 'search' | 'ai'
+  network?: false | 'search' | 'ai' | 'translate'
   async?: boolean
 }
 

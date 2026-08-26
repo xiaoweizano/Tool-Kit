@@ -11,6 +11,7 @@ import { MdWordIcon } from '@tools/md-word/icon'
 import { ExcelMdIcon } from '@tools/excel-md/icon'
 import { LinuxIcon } from '@tools/linux-manual/icon'
 import { BatchIcon } from '@tools/batch-transform/icon'
+import { TranslateIcon } from '@tools/translate/icon'
 
 // lazy 放在 register.ts 而非页面 index.tsx,避免页面自引用自身模块的循环导入
 const JsonParserPage = lazy(() => import('@tools/json-parser'))
@@ -24,6 +25,7 @@ const MdWordPageLazy = lazy(() => import('@tools/md-word'))
 const ExcelMdPageLazy = lazy(() => import('@tools/excel-md'))
 const LinuxManualPageLazy = lazy(() => import('@tools/linux-manual'))
 const BatchTransformPageLazy = lazy(() => import('@tools/batch-transform'))
+const TranslatePageLazy = lazy(() => import('@tools/translate'))
 
 // 加一个工具 = 在此数组追加一行(实现接口 + 目录),导航/路由自动生效
 export const tools: ToolDescriptor[] = [
@@ -81,6 +83,11 @@ export const tools: ToolDescriptor[] = [
     id: 'batch-transform', name: '批处理值转换', icon: BatchIcon,
     route: '/tools/batch-transform', component: BatchTransformPageLazy,
     capability: { offline: true }
+  },
+  {
+    id: 'translate', name: '翻译', icon: TranslateIcon,
+    route: '/tools/translate', component: TranslatePageLazy,
+    capability: { offline: false, network: 'translate' }
   }
 ]
 
