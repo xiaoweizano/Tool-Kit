@@ -10,6 +10,7 @@ import { TestDataIcon } from '@tools/testdata-gen/icon'
 import { MdWordIcon } from '@tools/md-word/icon'
 import { ExcelMdIcon } from '@tools/excel-md/icon'
 import { LinuxIcon } from '@tools/linux-manual/icon'
+import { BatchIcon } from '@tools/batch-transform/icon'
 
 // lazy 放在 register.ts 而非页面 index.tsx,避免页面自引用自身模块的循环导入
 const JsonParserPage = lazy(() => import('@tools/json-parser'))
@@ -22,6 +23,7 @@ const TestDataGenPageLazy = lazy(() => import('@tools/testdata-gen'))
 const MdWordPageLazy = lazy(() => import('@tools/md-word'))
 const ExcelMdPageLazy = lazy(() => import('@tools/excel-md'))
 const LinuxManualPageLazy = lazy(() => import('@tools/linux-manual'))
+const BatchTransformPageLazy = lazy(() => import('@tools/batch-transform'))
 
 // 加一个工具 = 在此数组追加一行(实现接口 + 目录),导航/路由自动生效
 export const tools: ToolDescriptor[] = [
@@ -73,6 +75,11 @@ export const tools: ToolDescriptor[] = [
   {
     id: 'linux-manual', name: 'Linux 命令大全', icon: LinuxIcon,
     route: '/tools/linux-manual', component: LinuxManualPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'batch-transform', name: '批处理值转换', icon: BatchIcon,
+    route: '/tools/batch-transform', component: BatchTransformPageLazy,
     capability: { offline: true }
   }
 ]

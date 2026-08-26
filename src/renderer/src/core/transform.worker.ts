@@ -6,6 +6,7 @@ import { fillPlaceholders } from '@tools/sql-placeholder/transform'
 import { assembleTenantSql } from '@tools/sql-builder/transform'
 import { matchRegex } from '@tools/regex-generator/transform'
 import { parseCreateTable } from '@tools/testdata-gen/transform'
+import { batchTransform } from '@tools/batch-transform/transform'
 
 const registry = new Map<string, Transform<unknown, unknown, TransformOpts>>()
 // 注册行示例(加工具在此追加 import + 一行注册)。
@@ -25,6 +26,9 @@ registry.set('regex-generator', ((input: { pattern: string; flags: string; text:
 ) as Transform<unknown, unknown, TransformOpts>)
 registry.set('testdata-gen', ((input: { sql: string }) =>
   parseCreateTable(input?.sql ?? '')
+) as Transform<unknown, unknown, TransformOpts>)
+registry.set('batch-transform', ((input: { raw: string; opsJson: string; format: string; customSep: string }) =>
+  batchTransform(input)
 ) as Transform<unknown, unknown, TransformOpts>)
 
 const unsupported = (id: string): ToolResult<never> => ({
