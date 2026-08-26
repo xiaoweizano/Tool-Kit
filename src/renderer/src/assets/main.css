@@ -34,6 +34,18 @@
   --color-neutral: #A08B6E; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
   --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
 }
+/* 自定义主题:默认值=深色克隆,运行时由 core/custom-theme 以 <html> 内联变量覆盖 */
+@plugin "daisyui/theme" {
+  name: "toolkit-custom"; color-scheme: dark;
+  --color-base-100: #0A0A0A; --color-base-200: #111214; --color-base-300: #2A2C30;
+  --color-base-content: #F4F1EA;
+  --color-primary: #F4F1EA; --color-primary-content: #0A0A0A;
+  --color-error: #E30613; --color-error-content: #F4F1EA;
+  --color-warning: #FFB300; --color-warning-content: #0A0A0A;
+  --color-success: #00A651; --color-success-content: #F4F1EA;
+  --color-neutral: #8A8D93; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+}
 
 /* 线路图世界基元:32px 模块网格 */
 .circuit-grid {

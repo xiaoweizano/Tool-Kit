@@ -11,6 +11,7 @@ colors:
   signal-amber: "#FFB300"
   signal-green: "#00A651"
   steel-muted: "#8A8D93"
+  syntax-key: "#7FA8C9"
   paper-surface: "#F4F1EA"
   paper-ink: "#1A1917"
   caramel-surface: "#2B1F14"
@@ -83,6 +84,7 @@ ToolKit 是一块带电的开发者工作台:10 个工具像线路板上的节�
 - **Raised Surface / 微抬面** (#111214):base-200,卡片/面板浮层。
 - **Line / 线路灰** (#2A2C30):base-300,边框与网格线。
 - **Steel Muted / 钢灰** (#8A8D93):neutral,等宽标注与次要文字。
+- **Syntax Key / 键蓝** (#7FA8C9):JSON 逐行着色中"键"的专属色(`.tk-k`);字符串/数字/字面量复用信号绿/琥珀/钢灰,唯键用此蓝,是体系里唯一的冷色。
 - **Caramel Surface / 焦糖面** (#2B1F14)+ **Warm Cream / 暖奶油** (#F2E6D4):第三主题的底色与文字。
 
 ### Signal（语义色,非装饰）
