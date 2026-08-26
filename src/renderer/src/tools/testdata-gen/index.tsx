@@ -34,10 +34,10 @@ export default function TestDataGenPage(): JSX.Element {
         <InputZone value={input?.sql ?? ''} onChange={onSqlChange} placeholder="粘贴 CREATE TABLE 语句,解析结果即刻点亮;点「生成」产出测试数据…" />
       </section>
       <div className="flex flex-wrap items-center gap-3 py-3" role="toolbar">
-        <label className="flex items-center gap-2 text-sm text-neutral">行数
+        <label className="flex items-center gap-2 whitespace-nowrap text-sm text-neutral">行数
           <input type="number" min={1} max={1000} value={rows} onChange={(e) => setRows(Number(e.target.value))} className="input input-bordered input-sm w-24 font-mono" />
         </label>
-        <label className="flex items-center gap-2 text-sm text-neutral">NULL 比例
+        <label className="flex items-center gap-2 whitespace-nowrap text-sm text-neutral">NULL 比例
           <select value={nullRate} onChange={(e) => setNullRate(Number(e.target.value))} className="select select-bordered select-sm font-mono">
             {[0, 0.1, 0.2, 0.3, 0.5].map((v) => <option key={v} value={v}>{Math.round(v * 100)}%</option>)}
           </select>
