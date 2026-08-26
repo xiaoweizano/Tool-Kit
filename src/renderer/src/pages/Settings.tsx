@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useThemeStore, type ThemeName } from '@core/theme-store'
 import { DEFAULT_CUSTOM_VARS, type CustomThemeVars } from '@core/custom-theme'
 import { checkUpdate, openReleases, APP_VERSION } from '@core/check-update'
+import { getKeys, setKeys, type EngineKeys } from '@core/translate-keys'
+import { ENGINES } from '@tools/translate/transform'
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
@@ -17,6 +19,11 @@ const VAR_ROWS: { key: keyof CustomThemeVars; label: string }[] = [
 export function Settings(): JSX.Element {
   const { theme, setTheme, custom, setCustomVars, resetCustom } = useThemeStore()
   const [upd, setUpd] = useState<string | null>(null)
+  const [keys, setKeysState] = useState(getKeys())
+  const updKey = (engine: string, patch: EngineKeys): void => {
+    setKeys({ [engine]: { ...keys[engine], ...patch } })
+    setKeysState(getKeys())
+  }
 
   const themes: { id: ThemeName; label: string; swatch: string[] }[] = [
     { id: 'toolkit-dark', label: '深色(平黑)', swatch: ['#0A0A0A', '#F4F1EA', '#E30613'] },
@@ -56,6 +63,25 @@ export function Settings(): JSX.Element {
               底色/抬面/边框自动分层;强调与信号色文字自动反差;编辑即时生效并保存
             </span>
           </div>
+        </div>
+      </section>
+      <section className="mt-6">
+        <h2 className="font-mono text-[11px] tracking-[0.3em] text-neutral">TRANSLATE · 翻译引擎 API key(可选)</h2>
+        <p className="mt-2 text-xs text-neutral">默认 MyMemory 免费可用;以下引擎需自配 key,百度/DeepL/有道/谷歌仅桌面版可直连(Web 端受 CORS 限制)</p>
+        <div className="mt-3 space-y-3">
+          {(['baidu', 'deepl', 'youdao', 'google'] as const).map((eid) => (
+            <div key={eid} className="flex flex-wrap items-center gap-2">
+              <span className="w-16 text-sm">{ENGINES[eid].label.split('(')[0]}</span>
+              {eid === 'deepl' || eid === 'google' ? (
+                <input className="input input-bordered input-sm w-64 font-mono" placeholder="API Key" value={keys[eid]?.apiKey ?? ''} onChange={(e) => updKey(eid, { apiKey: e.target.value })} />
+              ) : (
+                <>
+                  <input className="input input-bordered input-sm w-32 font-mono" placeholder="AppID/AppKey" value={keys[eid]?.appid ?? ''} onChange={(e) => updKey(eid, { appid: e.target.value })} />
+                  <input className="input input-bordered input-sm w-40 font-mono" placeholder="Secret" value={keys[eid]?.secret ?? ''} onChange={(e) => updKey(eid, { secret: e.target.value })} />
+                </>
+              )}
+            </div>
+          ))}
         </div>
       </section>
       <section className="mt-8">

@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, net } from 'electron'
 import { join } from 'node:path'
 import { releasesUrl, latestReleaseApi } from './update'
 
@@ -23,6 +23,14 @@ function createWindow(): void {
 
 ipcMain.handle('check-update', async () => latestReleaseApi())
 ipcMain.handle('open-releases', () => { void shell.openExternal(releasesUrl) })
+ipcMain.handle('net-fetch', async (_e, payload: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }) => {
+  const res = await net.fetch(payload.url, {
+    method: payload.init?.method ?? 'GET',
+    headers: payload.init?.headers,
+    body: payload.init?.body
+  })
+  return { ok: res.ok, status: res.status, body: await res.text() }
+})
 
 app.whenReady().then(() => {
   createWindow()
