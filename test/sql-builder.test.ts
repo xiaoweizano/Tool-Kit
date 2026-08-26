@@ -9,8 +9,8 @@ describe('assembleTenantSql 笛卡尔积分组', () => {
     const r = assembleTenantSql({ tenants, sqls })
     expect(r.status).toBe('ok')
     if (r.status === 'ok') {
-      expect(r.data).toContain('-- ===== [lsd] =====')
-      expect(r.data).toContain('-- ===== [zqkj] =====')
+      expect(r.data).toContain('-- ===== lsd.sql =====')
+      expect(r.data).toContain('-- ===== zqkj.sql =====')
       expect(r.data).toContain('where id=1;')
       expect(r.data).toContain('where id=1;') // SQL 补 ;结尾
     }

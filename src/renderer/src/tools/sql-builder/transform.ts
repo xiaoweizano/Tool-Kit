@@ -12,7 +12,7 @@ export function assembleTenantSql(input: TenantInput): ToolResult<string> {
 
   const blocks: string[] = []
   for (const tn of tenants) {
-    const header = `-- ===== [${tn}] =====`
+    const header = `-- ===== ${tn}.sql =====`
     const body = sqls.map((s) => (s.endsWith(';') ? s : s + ';')).join('\n')
     blocks.push([header, body].join('\n'))
   }
