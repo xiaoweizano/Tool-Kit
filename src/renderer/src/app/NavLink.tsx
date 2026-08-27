@@ -23,7 +23,7 @@ export function ToolNavLink({ tool }: { tool: ToolDescriptor }): JSX.Element {
       ) : null}
       {active && (
         <span
-          className="absolute top-full left-[23px] h-[calc(100%-0px)] w-0.5 bg-primary
+          className="absolute top-[calc(50%+4px)] left-[23px] h-[calc(50%-4px)] w-0.5 bg-primary
             shadow-[0_0_6px_var(--color-primary)]"
           aria-hidden
         />
