@@ -18,6 +18,8 @@ export function useTranslate(): {
 
   const translate = (a: TranslateArgs): void => {
     clearTimeout(timer.current)
+    // 空输入/重发时立即作废在途请求的回写资格,防旧结果覆盖新状态
+    seq.current++
     if (!a.text.trim()) { setResult(null); setPhase('idle'); return }
     setPhase('running')
     timer.current = setTimeout(() => void run(a), 500)
