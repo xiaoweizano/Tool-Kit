@@ -38,7 +38,7 @@ export function useTranslate(): {
     }
     const engine = ENGINES[a.engine] ?? ENGINES.mymemory
     const keys = getKeys()[engine.id] ?? {}
-    const jobs = rawLines.map(async (line) => {
+    const jobs = rawLines.map(async (line, i) => {
       const t = line.trim()
       if (t === '') return ''
       try {
@@ -47,7 +47,7 @@ export function useTranslate(): {
         if (!res.ok) throw new EngineParseError(`HTTP ${res.status}`)
         return parseEngineResponse(engine.id, JSON.parse(res.body))
       } catch (e) {
-        throw new EngineParseError(`第 ${rawLines.indexOf(line) + 1} 行翻译失败:${(e as Error).message}`)
+        throw new EngineParseError(`第 ${i + 1} 行翻译失败:${(e as Error).message}`)
       }
     })
     const settled = await Promise.allSettled(jobs)
@@ -60,7 +60,7 @@ export function useTranslate(): {
     }
     if (failed === settled.length && failed > 0) {
       const first = settled.find((s) => s.status === 'rejected') as PromiseRejectedResult
-      setResult({ status: 'error', kind: 'invalid-input', message: first.reason instanceof Error ? first.reason.message : '翻译失败' })
+      setResult({ status: 'error', kind: 'engine', message: first.reason instanceof Error ? first.reason.message : '翻译失败' })
     } else {
       setResult({ status: 'ok', data: out.join('\n') })
     }

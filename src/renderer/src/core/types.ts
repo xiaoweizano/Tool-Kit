@@ -20,6 +20,7 @@ export type ToolResult<T> =
   | { status: 'error'; kind: 'invalid-input'; message: string; position?: number }
   | { status: 'error'; kind: 'partial'; message: string; failedItems?: number[] }
   | { status: 'error'; kind: 'unsupported'; structure: string; message: string }
+  | { status: 'error'; kind: 'engine'; message: string }
 
 export interface TransformOpts { [key: string]: string | number | boolean }
 

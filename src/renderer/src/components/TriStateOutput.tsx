@@ -40,7 +40,7 @@ export function TriStateOutput({ result, phase, emptyHint }: Props): JSX.Element
         ? `(失败行:${result.failedItems.join(', ')})` : ''
     return (
       <div role="alert" className="border border-error/60 bg-base-200 p-4 font-mono text-sm">
-        <span className="text-error">✕ ERROR · {result.kind === 'invalid-input' ? '输入无效' : result.kind === 'partial' ? '部分失败' : `不支持:${result.structure}`}</span>
+        <span className="text-error">✕ ERROR · {result.kind === 'invalid-input' ? '输入无效' : result.kind === 'partial' ? '部分失败' : result.kind === 'engine' ? '执行失败' : `不支持:${result.structure}`}</span>
         <p className="mt-1 text-base-content">{result.message} <span className="text-neutral">{where}</span></p>
       </div>
     )
