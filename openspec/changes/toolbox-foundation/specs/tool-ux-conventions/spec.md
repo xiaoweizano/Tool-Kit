@@ -14,7 +14,7 @@
 - **THEN** 输出内容进入系统剪贴板,按钮给出复制成功反馈
 
 ### Requirement: 错误三态,无静默失败
-每个转换类工具 MUST 实现 OK/ERROR/EMPTY 三态渲染:EMPTY(空输入)显示占位引导;ERROR 按 ToolResult 的 kind(invalid-input/partial/unsupported)分别呈现——invalid-input MUST 展示错误信息并尽可能定位到输入位置;partial MUST 标注失败项;unsupported MUST 明确指出不支持的 结构。任何失败 MUST NOT 静默(界面无变化且无提示)。
+每个转换类工具 MUST 实现 OK/ERROR/EMPTY 三态渲染:EMPTY(空输入)显示占位引导;ERROR 按 ToolResult 的 kind(invalid-input/partial/unsupported/engine)分别呈现——invalid-input MUST 展示错误信息并尽可能定位到输入位置;partial MUST 标注失败项;unsupported MUST 明确指出不支持的结构;engine(联网增强失败:HTTP 错误/超时/key 缺失等,输入本身有效)MUST 明确给出失败原因与可行动提示。任何失败 MUST NOT 静默(界面无变化且无提示)。
 
 #### Scenario: 粘贴非法 JSON 显示定位错误
 - **WHEN** 用户向 JSON 工具粘贴含非法字符的字符串
