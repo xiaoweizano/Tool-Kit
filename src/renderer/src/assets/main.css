@@ -9,8 +9,7 @@
   --color-error: #E30613; --color-error-content: #F4F1EA;
   --color-warning: #FFB300; --color-warning-content: #0A0A0A;
   --color-success: #00A651; --color-success-content: #F4F1EA;
-  --color-neutral: #8A8D93; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
-  --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  --color-neutral: #8A8D93;
 }
 @plugin "daisyui/theme" {
   name: "toolkit-paper"; color-scheme: light;
@@ -20,8 +19,7 @@
   --color-error: #C50A10; --color-error-content: #F4F1EA;
   --color-warning: #B07500; --color-warning-content: #F4F1EA;
   --color-success: #007A3D; --color-success-content: #F4F1EA;
-  --color-neutral: #6B6E74; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
-  --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  --color-neutral: #6B6E74;
 }
 @plugin "daisyui/theme" {
   name: "toolkit-caramel"; color-scheme: dark;
@@ -31,8 +29,7 @@
   --color-error: #E8353D; --color-error-content: #F2E6D4;
   --color-warning: #FFB300; --color-warning-content: #2B1F14;
   --color-success: #2FBF71; --color-success-content: #2B1F14;
-  --color-neutral: #A08B6E; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
-  --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  --color-neutral: #A08B6E;
 }
 /* 自定义主题:默认值=深色克隆,运行时由 core/custom-theme 以 <html> 内联变量覆盖 */
 @plugin "daisyui/theme" {
@@ -43,8 +40,17 @@
   --color-error: #E30613; --color-error-content: #F4F1EA;
   --color-warning: #FFB300; --color-warning-content: #0A0A0A;
   --color-success: #00A651; --color-success-content: #F4F1EA;
-  --color-neutral: #8A8D93; --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --color-neutral: #8A8D93;
+}
+
+/* daisyUI theme 插件会把块内声明的 --font-sans/--font-mono 改写成裸通用族输出,
+   字体栈以无层 :root 声明生效(级联胜过 @layer base),并供 daisyUI reset 的
+   --default-font-family / --default-mono-font-family 消费 */
+:root {
   --font-sans: "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --default-font-family: var(--font-sans);
+  --default-mono-font-family: var(--font-mono);
 }
 
 /* 线路图世界基元:32px 模块网格 */
