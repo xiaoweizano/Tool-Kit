@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generatePassword, encryptAes, decryptAes, hashBcrypt, verifyBcrypt } from '@tools/password-generator/transform'
+import { generatePassword, encryptAes, decryptAes, generateRsaKeyPair, encryptRsa, decryptRsa, hashBcrypt, verifyBcrypt } from '@tools/password-generator/transform'
 
 describe('generatePassword', () => {
   it('length + charset', () => {
@@ -49,5 +49,32 @@ describe('bcrypt', () => {
       expect(v.status).toBe('ok')
       if (v.status === 'ok') expect(v.data.match).toBe(false)
     }
+  })
+})
+describe('rsa', () => {
+  it('keygen → encrypt with public key → decrypt with private key restores original', async () => {
+    const kp = await generateRsaKeyPair()
+    expect(kp.status).toBe('ok')
+    if (kp.status === 'ok') {
+      expect(kp.data.publicKey).toContain('BEGIN PUBLIC KEY')
+      expect(kp.data.privateKey).toContain('BEGIN PRIVATE KEY')
+      const e = await encryptRsa(kp.data.publicKey, 'secret msg')
+      expect(e.status).toBe('ok')
+      if (e.status === 'ok') {
+        const d = await decryptRsa(kp.data.privateKey, e.data)
+        expect(d.status).toBe('ok')
+        if (d.status === 'ok') expect(d.data).toBe('secret msg')
+      }
+    }
+  })
+  it('decryptRsa with a non-PEM key returns invalid-input', async () => {
+    const d = await decryptRsa('not-a-pem', 'x')
+    expect(d.status).toBe('error')
+    if (d.status === 'error') expect(d.kind).toBe('invalid-input')
+  })
+  it('encryptRsa with a non-PEM key returns invalid-input', async () => {
+    const e = await encryptRsa('not-a-pem', 'secret')
+    expect(e.status).toBe('error')
+    if (e.status === 'error') expect(e.kind).toBe('invalid-input')
   })
 })
