@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { parseJwt, signJwt, verifyJwt, renewJwt } from '@tools/jwt-tool/transform'
 import type { JwtAlg } from '@tools/jwt-tool/types'
 

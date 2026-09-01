@@ -1,5 +1,5 @@
 import type { ToolResult } from '@core/types'
-import { jwtVerify, SignJWT, decodeJwt } from 'jose'
+import { jwtVerify, SignJWT } from 'jose'
 import type { JwtResult, JwtAlg } from './types'
 
 const SUPPORTED_ALGS: JwtAlg[] = ['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
@@ -21,7 +21,8 @@ export function parseJwt(token: string): ToolResult<JwtResult> {
   const header = decodePart(parts[0])
   const payload = decodePart(parts[1])
   if (!header || !payload) return { status: 'error', kind: 'invalid-input', message: 'JWT 解码失败' }
-  const expiresAt = typeof (payload as any).exp === 'number' ? new Date((payload as any).exp * 1000).toISOString() : undefined
+  const exp = payload.exp
+  const expiresAt = typeof exp === 'number' ? new Date(exp * 1000).toISOString() : undefined
   return { status: 'ok', data: { header, payload, expiresAt } }
 }
 
@@ -54,6 +55,8 @@ export async function renewJwt(token: string, secret: string, newExpiry = '1h'):
   const payload = decodePart(parts[1])
   if (!payload) return { status: 'error', kind: 'invalid-input', message: 'JWT 解码失败' }
   const header = decodePart(parts[0])
-  const alg = (Object.keys(header ?? {}).some((k) => (header as any)[k] === 'HS256' || (header as any)[k] === 'HS384' || (header as any)[k] === 'HS512') ? (header as any).alg : 'HS256') as JwtAlg
+  const headerAlg = header && typeof header.alg === 'string' ? header.alg : ''
+  const SUPPORTED = ['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+  const alg = (SUPPORTED.includes(headerAlg) ? headerAlg : 'HS256') as JwtAlg
   return signJwt(JSON.stringify(payload), secret, alg, newExpiry)
 }
