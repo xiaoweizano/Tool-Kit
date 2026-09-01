@@ -50,3 +50,40 @@ export function analyzeStrength(password: string): ToolResult<StrengthReport> {
   if (suggestions.length === 0) suggestions.push('密码强度良好')
   return { status: 'ok', data: { score, level, length: len, checks, suggestions } }
 }
+
+import type { GenerateOpts } from './types'
+
+function randChar(set: string): string {
+  const buf = new Uint32Array(1)
+  crypto.getRandomValues(buf)
+  return set[buf[0] % set.length]
+}
+function makeCandidate(o: Required<Pick<GenerateOpts,'minLength'>> & GenerateOpts): string {
+  const lower = 'abcdefghijklmnopqrstuvwxyz', upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', digit = '0123456789', symbol = '!@#$%^&*()-_=+[]{};:,.<>?'
+  const required = o.requireCharsets ?? (o.targetLevel === 'strong' ? ['lower','upper','digit','symbol'] : ['lower','digit'])
+  const pools: Record<string,string> = { lower, upper, digit, symbol }
+  let allow = required.map((r) => pools[r]).join('')
+  if (o.excludeChars) allow = [...allow].filter((c) => !o.excludeChars.includes(c)).join('')
+  if (!allow) allow = lower + digit
+  const chars = required.map((r) => randChar(pools[r].split('').filter((c) => !(o.excludeChars ?? '').includes(c)).join('') || pools[r]))
+  while (chars.length < o.minLength) chars.push(randChar(allow))
+  // shuffle
+  for (let i = chars.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [chars[i], chars[j]] = [chars[j], chars[i]] }
+  return chars.join('')
+}
+
+export function generateByRules(opts: GenerateOpts): ToolResult<string> {
+  if ((opts.minLength ?? 12) < 4) return { status: 'error', kind: 'invalid-input', message: '长度至少 4' }
+  const target = opts.targetLevel ?? 'medium'
+  for (let i = 0; i < 2000; i++) {
+    const cand = makeCandidate({ ...opts, minLength: opts.minLength ?? 12 })
+    const a = analyzeStrength(cand)
+    if (a.status === 'ok') {
+      const lv = a.data.level
+      if ((target === 'strong' && lv === 'strong') || (target === 'medium' && lv !== 'weak') || (target === 'weak')) {
+        return { status: 'ok', data: cand }
+      }
+    }
+  }
+  return { status: 'ok', data: makeCandidate({ ...opts, minLength: opts.minLength ?? 12 }) }
+}

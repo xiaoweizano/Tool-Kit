@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { analyzeStrength } from '@tools/password-strength/transform'
+import { analyzeStrength, generateByRules } from '@tools/password-strength/transform'
 
 describe('analyzeStrength', () => {
   it('弱密码 <40, 命中纯数字/顺序', () => {
@@ -22,5 +22,22 @@ describe('analyzeStrength', () => {
     const r = analyzeStrength('')
     expect(r.status).toBe('error')
     if (r.status === 'error') expect(r.kind).toBe('invalid-input')
+  })
+})
+
+describe('generateByRules', () => {
+  it('generateByRules produces strong-level password', () => {
+    const r = generateByRules({ targetLevel: 'strong', minLength: 16 })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.length).toBeGreaterThanOrEqual(16)
+      expect(analyzeStrength(r.data).status).toBe('ok')
+      if (analyzeStrength(r.data).status === 'ok') expect(analyzeStrength(r.data).data.level).toBe('strong')
+    }
+  })
+  it('generateByRules excludes chars', () => {
+    const r = generateByRules({ targetLevel: 'strong', minLength: 12, excludeChars: '0Ol1' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(/[0Ol1]/.test(r.data)).toBe(false)
   })
 })
