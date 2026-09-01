@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { parseJwt, signJwt, verifyJwt, renewJwt } from '@tools/jwt-tool/transform'
+import type { JwtAlg } from '@tools/jwt-tool/types'
 
 const SECRET = 'super-secret'
 describe('parseJwt', () => {
@@ -41,6 +42,44 @@ describe('signJwt/verifyJwt', () => {
       expect(v.status).toBe('error')
       if (v.status === 'error') expect(v.kind).toBe('invalid-input')
     }
+  })
+})
+
+describe('security invariants', () => {
+  it('verify with alg none returns unsupported with structure none', async () => {
+    const s = await signJwt(JSON.stringify({ sub: 'u1' }), SECRET, 'HS256', '1h')
+    if (s.status !== 'ok') throw new Error('sign failed')
+    const v = await verifyJwt(s.data.token as string, SECRET, 'none' as JwtAlg)
+    expect(v.status).toBe('error')
+    if (v.status === 'error') expect(v.kind).toBe('unsupported')
+    if (v.status === 'error' && v.kind === 'unsupported') expect(v.structure).toBe('none')
+  })
+  it('verify with mismatched alg (HS384 against HS256 token) fails', async () => {
+    const s = await signJwt(JSON.stringify({ sub: 'u1' }), SECRET, 'HS256', '1h')
+    if (s.status !== 'ok') throw new Error('sign failed')
+    const v = await verifyJwt(s.data.token as string, SECRET, 'HS384')
+    expect(v.status).toBe('error')
+    if (v.status === 'error') expect(v.kind).toBe('invalid-input')
+  })
+  it('verify an expired token returns invalid-input with expired message', async () => {
+    const s = await signJwt(JSON.stringify({ sub: 'u1' }), SECRET, 'HS256', '-1s')
+    if (s.status !== 'ok') throw new Error('sign failed')
+    const v = await verifyJwt(s.data.token as string, SECRET, 'HS256')
+    expect(v.status).toBe('error')
+    if (v.status === 'error') {
+      expect(v.kind).toBe('invalid-input')
+      expect(v.message).toContain('已过期')
+    }
+  })
+  it('verify a tampered signature fails with invalid-input', async () => {
+    const s = await signJwt(JSON.stringify({ sub: 'u1' }), SECRET, 'HS256', '1h')
+    if (s.status !== 'ok') throw new Error('sign failed')
+    const token = s.data.token as string
+    const [h, p, sig] = token.split('.')
+    const tampered = `${h}.${p}.${sig[0] === 'A' ? 'B' : 'A'}${sig.slice(1)}`
+    const v = await verifyJwt(tampered, SECRET, 'HS256')
+    expect(v.status).toBe('error')
+    if (v.status === 'error') expect(v.kind).toBe('invalid-input')
   })
 })
 

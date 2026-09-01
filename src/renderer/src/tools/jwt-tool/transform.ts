@@ -2,6 +2,8 @@ import type { ToolResult } from '@core/types'
 import { jwtVerify, SignJWT, decodeJwt } from 'jose'
 import type { JwtResult, JwtAlg } from './types'
 
+const SUPPORTED_ALGS: JwtAlg[] = ['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+
 const textToKey = (secret: string): Uint8Array => new TextEncoder().encode(secret)
 
 function decodePart(part: string): Record<string, unknown> | null {
@@ -33,6 +35,9 @@ export async function signJwt(payloadJson: string, secret: string, alg: JwtAlg =
 }
 
 export async function verifyJwt(token: string, secret: string, alg: JwtAlg = 'HS256'): Promise<ToolResult<JwtResult>> {
+  if (!SUPPORTED_ALGS.includes(alg)) {
+    return { status: 'error', kind: 'unsupported', structure: alg, message: '暂不支持该算法' }
+  }
   try {
     const { payload } = await jwtVerify(token.trim(), textToKey(secret), { algorithms: [alg] })
     return { status: 'ok', data: { payload: payload as Record<string, unknown>, isValid: true } }
