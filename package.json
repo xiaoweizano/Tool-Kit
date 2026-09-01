@@ -15,8 +15,10 @@
     "icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "comlink": "^4.4.0",
     "docx": "^9.7.1",
+    "jose": "^6.2.10",
     "mammoth": "^1.12.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
