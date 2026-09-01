@@ -18,7 +18,6 @@ const valueToStr = (v: Condition['value']): string =>
   Array.isArray(v) ? v.join(',') : typeof v === 'object' ? '' : String(v)
 
 function LeafRow({ node, onChange, onRemove, onMove }: Omit<Props, 'depth'>): JSX.Element {
-  const isRange = node.op === 'range'
   const isMultiValue = node.op === 'in' || node.op === 'notIn'
 
   const setValue = (s: string): void => {
