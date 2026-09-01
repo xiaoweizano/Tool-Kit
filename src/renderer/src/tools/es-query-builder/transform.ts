@@ -11,6 +11,15 @@ const coerce = (value: string, type?: FieldType): string | number => {
   return value
 }
 
+// range 对象:逐边界字段按 fieldType 转换数值
+const coerceRange = (v: RangeObj, type?: FieldType): RangeObj => {
+  const out: RangeObj = {}
+  for (const [k, val] of Object.entries(v)) {
+    out[k as keyof RangeObj] = typeof val === 'string' ? coerce(val, type) : val
+  }
+  return out
+}
+
 const LEAF_OPS: Record<ConditionOp, (field: string, value: unknown) => unknown> = {
   eq: (f, v) => ({ term: { [f]: v } }),
   ne: (f, v) => ({ bool: { must_not: [{ term: { [f]: v } }] } }),
@@ -32,7 +41,7 @@ const toLeaf = (c: Condition): unknown => {
   if (c.op === 'exists' || c.op === 'notExists') return LEAF_OPS[c.op](c.field, undefined)
   const v = Array.isArray(c.value)
     ? c.value
-    : typeof c.value === 'object' ? c.value : coerce(String(c.value), c.fieldType)
+    : typeof c.value === 'object' ? coerceRange(c.value as RangeObj, c.fieldType) : coerce(String(c.value), c.fieldType)
   return LEAF_OPS[c.op](c.field, v)
 }
 

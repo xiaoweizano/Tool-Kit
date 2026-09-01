@@ -21,3 +21,45 @@ describe('buildQueryDsl 单条件', () => {
     if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
 })
+
+describe('buildQueryDsl 嵌套与完整操作符', () => {
+  it('嵌套 AND/OR 输出 bool', () => {
+    const root: EsQueryState['rootCondition'] = {
+      id: 'root', field: '', op: 'eq', value: '', logic: 'and', children: [
+        { id: 'c1', field: 'status', op: 'eq', value: 'active' },
+        { id: 'g1', field: '', op: 'eq', value: '', logic: 'or', children: [
+          { id: 'c2', field: 'category', op: 'eq', value: 'electronics' },
+          { id: 'c3', field: 'price', op: 'range', value: { gte: '100', lt: '200' }, fieldType: 'integer' }
+        ] }
+      ]
+    }
+    const r = buildQueryDsl(state(root))
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(JSON.parse(r.data)).toEqual({
+      query: { bool: { must: [
+        { term: { status: 'active' } },
+        { bool: { should: [
+          { term: { category: 'electronics' } },
+          { range: { price: { gte: 100, lt: 200 } } }
+        ] } }
+      ] } }, from: 0, size: 10
+    })
+  })
+  it('in 转 terms 数组', () => {
+    const r = buildQueryDsl(state({ id: 'c1', field: 'category', op: 'in', value: ['a', 'b', 'c'] }))
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(JSON.parse(r.data).query).toEqual({ terms: { category: ['a', 'b', 'c'] } })
+  })
+  it('exists/notExists 无值', () => {
+    const r = buildQueryDsl(state({ id: 'c1', field: 'deleted_at', op: 'notExists', value: '' }))
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(JSON.parse(r.data).query).toEqual({ bool: { must_not: [{ exists: { field: 'deleted_at' } }] } })
+  })
+  it('嵌套超 10 层回报 unsupported', () => {
+    let node: EsQueryState['rootCondition'] = { id: 'n0', field: 'a', op: 'eq', value: '1' }
+    for (let i = 1; i < 12; i++) node = { id: `n${i}`, field: '', op: 'eq', value: '', logic: 'and', children: [node] }
+    const r = buildQueryDsl(state(node))
+    expect(r.status).toBe('error')
+    if (r.status === 'error') expect(r.kind).toBe('unsupported')
+  })
+})
