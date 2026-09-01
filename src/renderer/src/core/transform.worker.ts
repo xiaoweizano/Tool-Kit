@@ -1,5 +1,6 @@
 import * as Comlink from 'comlink'
 import type { Transform, TransformOpts, ToolResult } from './types'
+import type { LangId } from '@tools/es-query-builder/types'
 import { transformJson } from '@tools/json-parser/transform'
 import { convertTimestamp } from '@tools/date-converter/transform'
 import { fillPlaceholders } from '@tools/sql-placeholder/transform'
@@ -7,6 +8,7 @@ import { assembleTenantSql } from '@tools/sql-builder/transform'
 import { matchRegex } from '@tools/regex-generator/transform'
 import { parseCreateTable } from '@tools/testdata-gen/transform'
 import { batchTransform } from '@tools/batch-transform/transform'
+import { buildQueryDsl, parseQueryDsl, generateCode } from '@tools/es-query-builder/transform'
 
 const registry = new Map<string, Transform<unknown, unknown, TransformOpts>>()
 // 注册行示例(加工具在此追加 import + 一行注册)。
@@ -30,6 +32,12 @@ registry.set('testdata-gen', ((input: { sql: string }) =>
 registry.set('batch-transform', ((input: { raw: string; opsJson: string; format: string; customSep: string }) =>
   batchTransform(input)
 ) as Transform<unknown, unknown, TransformOpts>)
+registry.set('es-query-builder', ((input: unknown, opts?: TransformOpts) => {
+  const action = opts?.action ?? 'build'
+  if (action === 'parse') return parseQueryDsl(input as string)
+  if (action === 'generate') return generateCode(input as string, (opts?.lang as LangId) ?? 'java')
+  return buildQueryDsl(input as never)
+}) as Transform<unknown, unknown, TransformOpts>)
 
 const unsupported = (id: string): ToolResult<never> => ({
   status: 'error', kind: 'unsupported', structure: id, message: '未注册的工具'

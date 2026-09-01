@@ -81,12 +81,92 @@ export function buildQueryDsl(state: EsQueryState): ToolResult<string> {
 }
 
 // parse/generate 在后续任务补齐
-export function parseQueryDsl(_dsl: string): ToolResult<EsQueryState> {
-  return { status: 'error', kind: 'unsupported', structure: 'parse', message: '待实现' }
+const parseLeaf = (node: Record<string, unknown>, id: string): Condition => {
+  const key = Object.keys(node)[0]
+  const body = node[key] as Record<string, unknown>
+  if (key === 'term') {
+    const f = Object.keys(body)[0]; const v = body[f]
+    return { id, field: f, op: 'eq', value: String(v), fieldType: typeof v === 'number' ? 'integer' : undefined }
+  }
+  if (key === 'terms') {
+    const f = Object.keys(body)[0]; const v = body[f] as unknown[]
+    return { id, field: f, op: 'in', value: v.map(String) }
+  }
+  if (key === 'wildcard') {
+    const f = Object.keys(body)[0]; const raw = body[f] as Record<string, unknown>
+    const v = String(raw.value ?? '').replace(/^\*|\*$/g, '')
+    return { id, field: f, op: 'contains', value: v }
+  }
+  if (key === 'exists') {
+    return { id, field: String(body.field), op: 'exists', value: '' }
+  }
+  if (key === 'range') {
+    const f = Object.keys(body)[0]; const r = body[f] as RangeObj
+    const keys = ['gt', 'gte', 'lt', 'lte'].filter((k) => r[k as keyof RangeObj] !== undefined)
+    const hasMulti = keys.length > 1
+    const isNum = typeof Object.values(r)[0] === 'number'
+    if (hasMulti) return { id, field: f, op: 'range', value: r, fieldType: isNum ? 'integer' : undefined }
+    const op = keys[0] as ConditionOp
+    const val = r[op as keyof RangeObj]
+    return { id, field: f, op, value: String(val), fieldType: isNum ? 'integer' : undefined }
+  }
+  if (key === 'match') {
+    const f = Object.keys(body)[0]
+    return { id, field: f, op: 'match', value: String(body[f]) }
+  }
+  if (key === 'bool') {
+    const logic = body.should ? 'or' : 'and'
+    const childrenArr = (body.should ?? body.must ?? body.filter ?? []) as Record<string, unknown>[]
+    const children = childrenArr.map((child, i) => parseNode(child, `${id}-${i}`))
+    return { id, field: '', op: 'eq', value: '', logic, children, minShouldMatch: body.minimum_should_match as number | undefined }
+  }
+  return { id, field: key, op: 'eq', value: JSON.stringify(body), readonly: true }
 }
-export function generateCode(_dsl: string, _lang: LangId): ToolResult<string> {
-  return { status: 'error', kind: 'unsupported', structure: 'generate', message: '待实现' }
+
+const parseNode = (node: Record<string, unknown>, id: string): Condition => parseLeaf(node, id)
+
+export function parseQueryDsl(dsl: string): ToolResult<EsQueryState> {
+  let parsed: unknown
+  try { parsed = JSON.parse(dsl) } catch (e) {
+    const pos = Number((/position (\d+)/.exec((e as Error).message)?.[1] ?? '0'))
+    return { status: 'error', kind: 'invalid-input', message: 'DSL 语法错误', position: pos }
+  }
+  const q = (parsed as Record<string, unknown>)?.query as Record<string, unknown> | undefined
+  if (!q) return { status: 'error', kind: 'invalid-input', message: '缺少 query 字段' }
+  const root = parseNode(structuredClone(q) as Record<string, unknown>, 'root')
+  return { status: 'ok', data: { rootCondition: root, indexName: '' } }
 }
-export function generateAllCodes(_dsl: string): Record<LangId, string> {
-  return { java: '', python: '', shell: '', http: '', go: '', node: '' }
+export function generateCode(dsl: string, lang: LangId): ToolResult<string> {
+  let body: Record<string, unknown>
+  try { body = JSON.parse(dsl) as Record<string, unknown> } catch {
+    return { status: 'error', kind: 'invalid-input', message: 'DSL 语法错误' }
+  }
+  const queryStr = JSON.stringify(body)
+  const idx = 'your_index'
+  switch (lang) {
+    case 'java':
+      return { status: 'ok', data: `import co.elastic.clients.elasticsearch.ElasticsearchClient;\nimport co.elastic.clients.elasticsearch.core.SearchRequest;\nimport co.elastic.clients.json.JsonData;\n\n// 已构造查询体,可直接作为 source 传入\nSearchRequest req = SearchRequest.of(s -> s.index("${idx}").source(\n  JsonData.fromJson("${queryStr.replace(/"/g, '\\"')}"))\n);` }
+    case 'python':
+      return { status: 'ok', data: `from elasticsearch import Elasticsearch\n\nclient = Elasticsearch()  # 或传入 host/api_key\n\nresp = client.search(index="${idx}", body=${queryStr})\n# 同步调用;如需异步可换 AsyncElasticsearch 并 await client.search(...)` }
+    case 'shell':
+      return { status: 'ok', data: `curl -X POST "http://localhost:9200/${idx}/_search" \\\n  -H "Content-Type: application/json" \\\n  -d '${queryStr}'` }
+    case 'http':
+      return { status: 'ok', data: `POST /${idx}/_search HTTP/1.1\nHost: localhost:9200\nContent-Type: application/json\n\n${queryStr}` }
+    case 'go':
+      return { status: 'ok', data: `import "github.com/elastic/go-elasticsearch/v8"\nimport "strings"\n\n// v8 用 es.Search 传入 body(Body 读 io.Reader)\nreq := esapi.SearchRequest{Index: []string{"${idx}"}, Body: strings.NewReader(\`${queryStr}\`)}` }
+    case 'node':
+      return { status: 'ok', data: `import { Client } from '@elastic/elasticsearch'\n\nconst client = new Client({ node: 'http://localhost:9200' })\n\nawait client.search({ index: '${idx}', body: ${queryStr} })` }
+    default:
+      return { status: 'error', kind: 'unsupported', structure: lang, message: `暂不支持该语言:${lang}` }
+  }
+}
+
+export function generateAllCodes(dsl: string): Record<LangId, string> {
+  const langs: LangId[] = ['java', 'python', 'shell', 'http', 'go', 'node']
+  const out = {} as Record<LangId, string>
+  for (const l of langs) {
+    const r = generateCode(dsl, l)
+    out[l] = r.status === 'ok' ? r.data : ''
+  }
+  return out
 }
