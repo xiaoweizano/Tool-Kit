@@ -13,6 +13,9 @@ import { LinuxIcon } from '@tools/linux-manual/icon'
 import { BatchIcon } from '@tools/batch-transform/icon'
 import { TranslateIcon } from '@tools/translate/icon'
 import { EsQueryIcon } from '@tools/es-query-builder/icon'
+import { PasswordStrengthIcon } from '@tools/password-strength/icon'
+import { JwtIcon } from '@tools/jwt-tool/icon'
+import { PasswordGenIcon } from '@tools/password-generator/icon'
 
 // lazy 放在 register.ts 而非页面 index.tsx,避免页面自引用自身模块的循环导入
 const JsonParserPage = lazy(() => import('@tools/json-parser'))
@@ -28,6 +31,9 @@ const LinuxManualPageLazy = lazy(() => import('@tools/linux-manual'))
 const BatchTransformPageLazy = lazy(() => import('@tools/batch-transform'))
 const TranslatePageLazy = lazy(() => import('@tools/translate'))
 const EsQueryBuilderPageLazy = lazy(() => import('@tools/es-query-builder'))
+const PasswordStrengthPageLazy = lazy(() => import('@tools/password-strength'))
+const JwtToolPageLazy = lazy(() => import('@tools/jwt-tool'))
+const PasswordGeneratorPageLazy = lazy(() => import('@tools/password-generator'))
 
 // 加一个工具 = 在此数组追加一行(实现接口 + 目录),导航/路由自动生效
 export const tools: ToolDescriptor[] = [
@@ -94,6 +100,21 @@ export const tools: ToolDescriptor[] = [
   {
     id: 'es-query-builder', name: 'ES 查询构造', icon: EsQueryIcon,
     route: '/tools/es-query-builder', component: EsQueryBuilderPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'password-strength', name: '密码强度', icon: PasswordStrengthIcon,
+    route: '/tools/password-strength', component: PasswordStrengthPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'jwt-tool', name: 'JWT 解析', icon: JwtIcon,
+    route: '/tools/jwt-tool', component: JwtToolPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'password-generator', name: '密码生成', icon: PasswordGenIcon,
+    route: '/tools/password-generator', component: PasswordGeneratorPageLazy,
     capability: { offline: true }
   }
 ]
