@@ -63,7 +63,8 @@ function makeCandidate(o: Required<Pick<GenerateOpts,'minLength'>> & GenerateOpt
   const required = o.requireCharsets ?? (o.targetLevel === 'strong' ? ['lower','upper','digit','symbol'] : ['lower','digit'])
   const pools: Record<string,string> = { lower, upper, digit, symbol }
   let allow = required.map((r) => pools[r]).join('')
-  if (o.excludeChars) allow = [...allow].filter((c) => !o.excludeChars.includes(c)).join('')
+  const ex = o.excludeChars
+  if (ex) allow = [...allow].filter((c) => !ex.includes(c)).join('')
   if (!allow) allow = lower + digit
   const chars = required.map((r) => randChar(pools[r].split('').filter((c) => !(o.excludeChars ?? '').includes(c)).join('') || pools[r]))
   while (chars.length < o.minLength) chars.push(randChar(allow))

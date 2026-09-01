@@ -32,7 +32,8 @@ describe('generateByRules', () => {
     if (r.status === 'ok') {
       expect(r.data.length).toBeGreaterThanOrEqual(16)
       expect(analyzeStrength(r.data).status).toBe('ok')
-      if (analyzeStrength(r.data).status === 'ok') expect(analyzeStrength(r.data).data.level).toBe('strong')
+      const a = analyzeStrength(r.data)
+      if (a.status === 'ok') expect(a.data.level).toBe('strong')
     }
   })
   it('generateByRules excludes chars', () => {
