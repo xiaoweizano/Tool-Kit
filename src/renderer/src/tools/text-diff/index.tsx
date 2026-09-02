@@ -31,14 +31,16 @@ const CASE_MODES: { id: CaseMode; label: string }[] = [
   { id: 'alternating', label: '交替' }
 ]
 
-const STAT_ITEMS: { key: keyof Pick<TextStats, 'chars' | 'letters' | 'digits' | 'symbols' | 'whitespace' | 'words' | 'lines' | 'uniqueChars'>; label: string }[] = [
+const STAT_ITEMS: { key: keyof Pick<TextStats, 'chars' | 'letters' | 'digits' | 'symbols' | 'punct' | 'spaces' | 'words' | 'lines' | 'paragraphs' | 'uniqueChars'>; label: string }[] = [
   { key: 'chars', label: '字符' },
   { key: 'letters', label: '字母' },
   { key: 'digits', label: '数字' },
+  { key: 'punct', label: '标点' },
   { key: 'symbols', label: '符号' },
-  { key: 'whitespace', label: '空白' },
+  { key: 'spaces', label: '空白' },
   { key: 'words', label: '单词' },
   { key: 'lines', label: '行数' },
+  { key: 'paragraphs', label: '段落' },
   { key: 'uniqueChars', label: '去重字符' }
 ]
 

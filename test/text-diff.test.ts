@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { diffText, textStats, applyCase, segmentText } from '@tools/text-diff/transform'
+import { diffText, textStats, applyCase, segmentText, diffSideBySide } from '@tools/text-diff/transform'
 import type { CaseMode } from '@tools/text-diff/types'
 
 describe('diffText', () => {
@@ -46,14 +46,63 @@ describe('textStats', () => {
       expect(r.data.chars).toBe(16)
       expect(r.data.letters).toBe(10)
       expect(r.data.digits).toBe(3)
-      expect(r.data.symbols).toBe(1)
-      expect(r.data.whitespace).toBe(2)
+      expect(r.data.spaces).toBe(2)
+      expect(r.data.punct).toBe(1)
+      expect(r.data.symbols).toBe(0)
       expect(r.data.words).toBe(3)
       expect(r.data.lines).toBe(1)
+      expect(r.data.paragraphs).toBe(1)
       expect(r.data.uniqueChars).toBe(12)
       expect(r.data.topChars[0]).toBeDefined()
       expect(r.data.topChars[0].count).toBeGreaterThanOrEqual(r.data.topChars[1]?.count ?? 0)
     }
+  })
+  it('counts CJK letters and spaces', () => {
+    const r = textStats('Hello World 123! 你好')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.spaces).toBe(3)
+      expect(r.data.letters).toBe(10)
+      expect(r.data.digits).toBe(3)
+    }
+  })
+  it('splits punctuation from symbols', () => {
+    const r = textStats('a, b!')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.punct).toBe(2)
+      expect(r.data.symbols).toBe(0)
+    }
+  })
+  it('counts paragraphs by blank-line blocks', () => {
+    const r = textStats('x\n\n\ny')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.lines).toBe(4)
+      expect(r.data.paragraphs).toBe(2)
+    }
+  })
+})
+
+describe('diffSideBySide', () => {
+  it('pairs removed/added lines on the same row', () => {
+    const r = diffSideBySide('a\nb\nc', 'a\nX\nc', 'line')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      const removed = r.data.find((row) => row.left.kind === 'removed' && row.left.text === 'b')
+      expect(removed).toBeDefined()
+      expect(removed?.right.kind).toBe('added')
+      expect(removed?.right.text).toBe('X')
+      const sameA = r.data.find((row) => row.left.kind === 'same' && row.left.text === 'a')
+      const sameC = r.data.find((row) => row.right.kind === 'same' && row.right.text === 'c')
+      expect(sameA?.right.kind).toBe('same')
+      expect(sameC?.left.kind).toBe('same')
+    }
+  })
+  it('empty one side invalid-input', () => {
+    const r = diffSideBySide('', 'a', 'line')
+    expect(r.status).toBe('error')
+    if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
 })
 
