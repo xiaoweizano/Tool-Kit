@@ -38,7 +38,18 @@
 - [x] **两侧都空回 EMPTY** — ☐ 待人工:isEmpty 判空回 EMPTY/TriStateOutput 引导态
 
 ### Requirement: 免费离线无网络
-- [x] **纯函数可测** — ☑ (test/text-diff.test.ts 五个 it 直接调用 diffText 断言确定输出:line/word/char 三模式 + HTML 转义防 XSS)+ 静态核验零网络(jsdiff 纯本地,全前端计算)
+- [x] **纯函数可测** — ☑ (test/text-diff.test.ts 五个 it 直接调用 diffText 断言确定输出:line/word/char 三模式 + HTML 转义防 XSS)+ 静态核验零网络(textStats/applyCase/segmentText 亦为纯函数,全本地前端计算,无网络请求)
+
+### Requirement: 文本统计
+- [x] **统计一段混合文本** — ☑ (test/text-diff.test.ts「reports counts for a mixed string」:chars=16/letters=10/digits=3/symbols=1/whitespace=2/words=3/lines=1/uniqueChars=12,topChars 按频率降序)
+
+### Requirement: 多模式大小写转换
+- [x] **camelCase 与 snake_case 转换** — ☑ (test/text-diff.test.ts「applyCase(foo bar, camel) -> fooBar」/「applyCase(foo bar, snake) -> foo_bar」:it.each 参数化用例断言精确输出)
+- [x] **交替大小写** — ☑ (test/text-diff.test.ts「applyCase(ab, alternating) -> Ab」;it.each 共覆盖 upper/title/camel/pascal/snake/kebab/constant/sentence/alternating 九种模式)
+
+### Requirement: 差异化分词分割
+- [x] **按类别分组** — ☑ (test/text-diff.test.ts「splits by type」:断言六段 letters/digits/symbols/letters/whitespace/digits)
+- [x] **自定义分隔符硬切分** — ☑ (test/text-diff.test.ts「custom delimiter splits a symbol run」:!@ 拆为 [symbols !][symbols @] 两个 token;另有「custom delimiter splits across letters」a@b 用例)
 
 ## log-analyzer-tool
 
@@ -73,18 +84,18 @@
 
 - base-converter:粘贴即四进制即时刷新(防抖)
 - base-converter:清空回 EMPTY 引导态
-- text-diff:粘贴两段文本即高亮(防抖)
-- text-diff:切换 line/word/char 三模式刷新
-- text-diff:两侧都空回 EMPTY 引导态
+- text-diff(对比 tab):粘贴两段文本即高亮(防抖)
+- text-diff(对比 tab):切换 line/word/char 三模式刷新
+- text-diff(对比 tab):两侧都空回 EMPTY 引导态
 - log-analyzer:文件上传流程(「选择日志文件」+ FileReader 读文件自动分析)
 - log-analyzer:点击异常 → 前后各 3 行上下文面板(ContextPanel)
 - **零网络请求**:三个工具全本地计算,`dev:web` 打开页无任何网络请求(离线优先,数据不出本机)
 
 ## 覆盖统计
 
-- **Requirement**: 17(base-converter-tool 5 + text-diff-tool 4 + log-analyzer-tool 8)
-- **Scenario**: 23(base-converter-tool 7 + text-diff-tool 7 + log-analyzer-tool 9)
-- **已验证**: 23(自动化测试 17 + 静态核验 1 + 待人工 5)
+- **Requirement**: 20(base-converter-tool 5 + text-diff-tool 7 + log-analyzer-tool 8)
+- **Scenario**: 28(base-converter-tool 7 + text-diff-tool 12 + log-analyzer-tool 9)
+- **已验证**: 28(自动化测试 22 + 静态核验 1 + 待人工 5)
   - base-converter-tool: 自动化 5 + 静态核验 0 + 待人工 2 = 7
-  - text-diff-tool: 自动化 4 + 静态核验 0 + 待人工 3 = 7
+  - text-diff-tool: 自动化 9 + 静态核验 0 + 待人工 3 = 12
   - log-analyzer-tool: 自动化 8 + 静态核验 1 + 待人工 0 = 9
