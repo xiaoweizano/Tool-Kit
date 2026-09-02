@@ -40,13 +40,13 @@
 - [x] **反代含 WebSocket 头** — ☑ (test/nginx-generator.test.ts「proxy with websocket headers」:proxy_pass=http://backend:8080、websocket=true → 断言 `proxy_pass http://backend:8080` + `proxy_set_header Upgrade`;`Connection "upgrade"` 与 Host/X-Real-IP/X-Forwarded-For 由 transform.ts:16-19 静态核验)
 
 ### Requirement: SSL 配置
-- [x] **生成带 SSL 的 server 块** — ☑ 静态核验:transform.ts:12-14 于勾选 sslCert/sslKey 时拼 `listen <port> ssl`、`ssl_certificate`、`ssl_certificate_key`;:14 forceHttps 拼 80→443 301 重定向;:24 hsts 拼 `Strict-Transport-Security`。无对应单测(测试未覆盖 SSL/forceHttps/hsts 输出)→ 表单勾选输出需人工目验
+- [x] **生成带 SSL 的 server 块** — ☑ (test/nginx-generator.test.ts「emits ssl + force https + HSTS when enabled」:ssl_certificate/ssl_certificate_key/`return 301 https://`/Strict-Transport-Security 均已断言)
 
 ### Requirement: 缓存/压缩/安全头
-- [x] **生成 gzip 与安全头** — ☑ 静态核验:transform.ts:23 gzip 拼 `gzip on`;:24 安全头拼 `X-Frame-Options`/`X-Content-Type-Options`/`Content-Security-Policy`/`server_tokens off`。无对应单测 → 表单勾选输出需人工目验
+- [x] **生成 gzip 与安全头** — ☑ (test/nginx-generator.test.ts「emits gzip + cache + security headers when enabled」:gzip on/expires 7d/X-Frame-Options/server_tokens off 已断言;「does NOT emit gzip when disabled」断言关闭时不输出 gzip on)
 
 ### Requirement: 负载均衡 upstream
-- [x] **生成 upstream 块(非空)** — ☑ 静态核验:transform.ts:8-11 拼 `upstream backend { least_conn/ip_hash/轮询 + server list }`;无单测覆盖非空生成(仅覆盖空列表 invalid)。
+- [x] **生成 upstream 块(非空)** — ☑ (test/nginx-generator.test.ts「emits upstream block with servers + least_conn」:upstream backend/least_conn/server a:8080;/server b:8080; 已断言;transform.ts:8-11 静态核验)
 - [x] **空 server 列表返回 invalid-input** — ☑ (test/nginx-generator.test.ts「upstream with empty servers invalid」:upstream servers=[] → error;message「请填写至少一个 upstream server」由 transform.ts:6 静态核验)
 
 ### Requirement: 注释与本地离线
@@ -55,20 +55,20 @@
 ## jvm-params-tool
 
 ### Requirement: 堆内存参数生成
-- [x] **生成堆内存参数** — ☑ 静态核验:transform.ts:12-15 于填 xms/xmx/xmn/metaspace 时拼 `-Xms<>`/`-Xmx<>`/`-Xmn<>`/`-XX:MetaspaceSize=` 各带行注释。golden 测试「heap flags」**仅传空选项断言 status=ok**,并未断言堆内存 flag 输出 → 表单填堆内存需人工目验
+- [x] **生成堆内存参数** — ☑ (test/jvm-params.test.ts「emits Xmx/Xms/Xmn/Metaspace with comments」:-Xms512m/-Xmx2g/-Xmn256m/-XX:MetaspaceSize=256m 已断言;「heap-flags test asserts actual heap output」补 -Xmx2g)
 
 ### Requirement: GC 策略参数
 - [x] **选 G1 GC** — ☑ (test/jvm-params.test.ts「includes g1 when chosen」:gc='g1' → 断言输出含 `-XX:+UseG1GC`;`-XX:MaxGCPauseMillis=100` 由 transform.ts:5 静态核验)
-- [x] **选 ZGC** — ☑ 静态核验:transform.ts:6 gc='zgc' → `-XX:+UseZGC` + `-XX:+UnlockExperimentalVMOptions`;无对应单测
+- [x] **选 ZGC** — ☑ (test/jvm-params.test.ts「zgc and shenandoah emit their flags」:gc='zgc' → -XX:+UseZGC;gc='shenandoah' → -XX:+UseShenandoahGC)
 
 ### Requirement: 调试与监控参数
-- [x] **生成调试参数** — ☑ 静态核验:transform.ts:17-22 拼 `-XX:+HeapDumpOnOutOfMemoryError`、`-XX:HeapDumpPath=`、`-agentlib:jdwp=...`、`-XX:+PrintGCDetails`、`-XX:+FlightRecorder`、JMX 端口;无对应单测
+- [x] **生成调试参数** — ☑ (test/jvm-params.test.ts「debug + monitor + custom flags」:-XX:+HeapDumpOnOutOfMemoryError/-XX:HeapDumpPath=/-agentlib:jdwp/-XX:+PrintGCDetails/jmxremote.port=/-XX:+FlightRecorder 均已断言)
 
 ### Requirement: 容器感知参数
-- [x] **生成容器感知参数** — ☑ (test/jvm-params.test.ts「container flags」:container=true、xmx=2g → 断言输出含 `UseContainerSupport`;`-XX:MaxRAMPercentage=75.0` 由 transform.ts:24 静态核验)
+- [x] **生成容器感知参数** — ☑ (test/jvm-params.test.ts「container flags」:container=true、xmx=2g → 断言输出含 `UseContainerSupport`;`-XX:MaxRAMPercentage=75.0` 现由「debug + monitor + custom flags」断言)
 
 ### Requirement: 自定义参数与空态
-- [x] **合并自定义参数** — ☑ 静态核验:transform.ts:25 `for (const e of o.extra.filter(Boolean)) rows.push({flag:e,note:'自定义'})` 逐行合并进末尾;无对应单测
+- [x] **合并自定义参数** — ☑ (test/jvm-params.test.ts「debug + monitor + custom flags」:extra=['-Dspring.profiles.active=prod'] → 输出含该自定义 flag;transform.ts:25 逐行合并进末尾)
 - [x] **无选项回 EMPTY** — ☑ (test/jvm-params.test.ts「heap flags」:generateJvmParams({extra:[]}) → status=ok(/非 error),即 rows.length===0 时 transform.ts:26 返回 `{status:'ok',data:''}` EMPTY 引导态;非错误)
 
 ### Requirement: 本地离线与复制
@@ -89,7 +89,7 @@
 
 - **Requirement**: 19(docker-generator-tool 7 + nginx-generator-tool 6 + jvm-params-tool 6)
 - **Scenario**: 24(docker-generator-tool 9 + nginx-generator-tool 7 + jvm-params-tool 8)
-- **已验证**: 24(自动化测试 16 + 静态核验 7 + 待人工 1)
+- **已验证**: 24(自动化测试 23 + 静态核验 0 + 待人工 1)
   - docker-generator-tool: 自动化 8 + 静态核验 0 + 待人工 1 = 9
-  - nginx-generator-tool: 自动化 4 + 静态核验 3 + 待人工 0 = 7
-  - jvm-params-tool: 自动化 4 + 静态核验 4 + 待人工 0 = 8
+  - nginx-generator-tool: 自动化 7 + 静态核验 0 + 待人工 0 = 7
+  - jvm-params-tool: 自动化 8 + 静态核验 0 + 待人工 0 = 8

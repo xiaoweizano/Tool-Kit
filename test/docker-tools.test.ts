@@ -38,6 +38,11 @@ describe('parseImageName', () => {
     if (r.status !== 'ok') throw new Error('err')
     expect(r.data.tag).toBe('latest')
   })
+  it('parseImageName empty → invalid-input', () => {
+    const r = parseImageName('')
+    expect(r.status).toBe('error')
+    if (r.status === 'error') expect(r.kind).toBe('invalid-input')
+  })
 })
 
 describe('parseRegistryUrl', () => {
@@ -46,6 +51,11 @@ describe('parseRegistryUrl', () => {
     if (r.status !== 'ok') throw new Error('err')
     expect(r.data.host).toBe('registry.example.com')
     expect(r.data.port).toBe('5000')
+  })
+  it('parseRegistryUrl malformed → invalid-input', () => {
+    const r = parseRegistryUrl('???')
+    expect(r.status).toBe('error')
+    if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
 })
 

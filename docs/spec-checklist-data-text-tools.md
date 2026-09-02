@@ -27,7 +27,7 @@
 
 ### Requirement: 两段文本差异高亮
 - [x] **逐行差异高亮** — ☑ (test/text-diff.test.ts「line mode highlights changed line」:输出含 del 删除标记)
-- [x] **逐词差异高亮** — ☑ 静态核验:transform.ts 第 9 行 `mode==='word'?diffWords(...)` 生成词级高亮(新增绿/删除红);无 word golden 测试,需 UI 目验
+- [x] **逐词差异高亮** — ☑ (test/text-diff.test.ts「word mode highlights a changed word」:diffWords 生成词级高亮,输出含 `del` 删除标记 + `text-success` 新增标记)
 - [x] **空输入返回 invalid-input** — ☑ (test/text-diff.test.ts「empty one side invalid-input」:message「请粘贴两段文本」)
 
 ### Requirement: 三模式切换
@@ -38,7 +38,7 @@
 - [x] **两侧都空回 EMPTY** — ☐ 待人工:isEmpty 判空回 EMPTY/TriStateOutput 引导态
 
 ### Requirement: 免费离线无网络
-- [x] **纯函数可测** — ☑ (test/text-diff.test.ts 三个 it 直接调用 diffText 断言确定输出)+ 静态核验零网络(jsdiff 纯本地,全前端计算)
+- [x] **纯函数可测** — ☑ (test/text-diff.test.ts 五个 it 直接调用 diffText 断言确定输出:line/word/char 三模式 + HTML 转义防 XSS)+ 静态核验零网络(jsdiff 纯本地,全前端计算)
 
 ## log-analyzer-tool
 
@@ -49,19 +49,19 @@
 - [x] **同类型异常聚为一簇** — ☑ (test/log-analyzer.test.ts「exception clustering dedupes」:NullPointerException → 1 簇 count=2,message=OrderService.getOrder;相似堆栈按类型聚合,去重而非字符串等值)
 
 ### Requirement: 关键词提取
-- [x] **提取高频关键词** — ☑ 静态核验:transform.ts 第 76-79 行对 ERROR/FATAL 行分词、去纯标点、按 count 降序取 Top 20;golden 样本无重复关键词,无单测断言——UI 目验
+- [x] **提取高频关键词** — ☑ (test/log-analyzer.test.ts「extracts keywords from ERROR lines」:RICH 样本 ERROR 行分词,keywords 非空且含 timeoutException/OrderService)
 
 ### Requirement: ID 提取(TraceId/RequestId/IP)
 - [x] **提取 TraceId 与 IP** — ☑ (test/log-analyzer.test.ts「level stats + ids + ips」:traceIds≥1、ips 含 10.0.0.1;去重 + lineCount)
 
 ### Requirement: 接口聚合
-- [x] **按接口聚合异常** — ☑ 静态核验:transform.ts 第 67-74 行 pathRe 匹配 GET/POST + ERROR/FATAL → pathErrors 按路径聚合异常类型与计数;golden 样本无接口聚合断言——UI 由 StatsPanel「接口异常聚合」卡片渲染
+- [x] **按接口聚合异常** — ☑ (test/log-analyzer.test.ts「aggregates errors per endpoint」:RICH 样本 /api/order 聚合 2 次 timeoutException,errors[0].count=2;transform.ts 第 67-74 行 pathRe 匹配 GET/POST + ERROR/FATAL)
 
 ### Requirement: 上下文定位
 - [x] **定位异常上下文** — ☑ (test/log-analyzer.test.ts「splitContextLines」「returns window around a line」:前后各 3 行原文,+ ☐ 待人工:点击异常 button → onContext(splitContextLines(...)) 弹 ContextPanel 手测)
 
 ### Requirement: 时间线与大文件边界
-- [x] **有时间戳生成时间线** — ☑ 静态核验:transform.ts 第 43-44 行 timeRe 分钟桶聚合 timeline;golden 样本含时间戳,UI 由 StatsPanel「时间线」卡片渲染
+- [x] **有时间戳生成时间线** — ☑ (test/log-analyzer.test.ts「builds a timeline from timestamps」:RICH 样本按分钟桶聚合,timeline 非空且每项 ts 为字符串、count≥1;transform.ts 第 43-44 行 timeRe 分钟桶)
 - [x] **超大文件截断** — ☑ (test/log-analyzer.test.ts「>50MB input returns ok over truncated slice」:>`50MB` 输入返回 `status:'ok'`,对前 50MB 截断切片分析,`totalLines` < 原始行数,且 >0;transform.ts 在 split 前截断,非 `partial` 错误)
 
 ### Requirement: 本地离线与分块异步
@@ -84,7 +84,7 @@
 
 - **Requirement**: 17(base-converter-tool 5 + text-diff-tool 4 + log-analyzer-tool 8)
 - **Scenario**: 23(base-converter-tool 7 + text-diff-tool 7 + log-analyzer-tool 9)
-- **已验证**: 23(自动化测试 13 + 静态核验 5 + 待人工 5)
+- **已验证**: 23(自动化测试 17 + 静态核验 1 + 待人工 5)
   - base-converter-tool: 自动化 5 + 静态核验 0 + 待人工 2 = 7
-  - text-diff-tool: 自动化 3 + 静态核验 1 + 待人工 3 = 7
-  - log-analyzer-tool: 自动化 5 + 静态核验 4 + 待人工 0 = 9
+  - text-diff-tool: 自动化 4 + 静态核验 0 + 待人工 3 = 7
+  - log-analyzer-tool: 自动化 8 + 静态核验 1 + 待人工 0 = 9

@@ -9,6 +9,14 @@ const LOG = [
   '2026-08-29 14:30:04.000 INFO  [main] Server started on port 8080 from 10.0.0.1'
 ].join('\n')
 
+const RICH = [
+  '2026-08-29 14:30:00.000 ERROR [pid=1] [tid=abc] [rid=r1] POST /api/order 500 timeoutException at OrderService.getOrder',
+  '\tat java.lang.TimeoutException: timed out',
+  '2026-08-29 14:30:00.000 ERROR [pid=1] [tid=def] [rid=r2] POST /api/order 500 timeoutException at OrderService.pay',
+  '2026-08-29 14:31:00.000 WARN  [pid=1] GET /api/health 200 slow database',
+  '2026-08-29 14:32:00.000 INFO  [pid=1] GET /api/health 200 ok'
+].join('\n')
+
 describe('analyzeLog', () => {
   it('level stats + ids + ips', () => {
     const r = analyzeLog(LOG)
@@ -53,6 +61,25 @@ describe('analyzeLog', () => {
       expect(r.data.totalLines).toBeLessThan(reps)
       expect(r.data.levelStats.length).toBeGreaterThan(0)
     }
+  })
+  it('extracts keywords from ERROR lines', () => {
+    const r = analyzeLog(RICH)
+    if (r.status !== 'ok') throw new Error('err')
+    expect(r.data.keywords.length).toBeGreaterThan(0)
+    expect(r.data.keywords.some((k) => k.word === 'timeoutException' || k.word === 'OrderService')).toBe(true)
+  })
+  it('aggregates errors per endpoint', () => {
+    const r = analyzeLog(RICH)
+    if (r.status !== 'ok') throw new Error('err')
+    const ep = r.data.endpoints.find((e) => e.path === '/api/order')
+    expect(ep).toBeDefined()
+    expect(ep?.errors[0].count).toBe(2)
+  })
+  it('builds a timeline from timestamps', () => {
+    const r = analyzeLog(RICH)
+    if (r.status !== 'ok') throw new Error('err')
+    expect(r.data.timeline.length).toBeGreaterThan(0)
+    expect(r.data.timeline.every((t) => typeof t.ts === 'string' && t.count >= 1)).toBe(true)
   })
 })
 
