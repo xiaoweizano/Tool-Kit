@@ -62,7 +62,7 @@
 
 ### Requirement: 时间线与大文件边界
 - [x] **有时间戳生成时间线** — ☑ 静态核验:transform.ts 第 43-44 行 timeRe 分钟桶聚合 timeline;golden 样本含时间戳,UI 由 StatsPanel「时间线」卡片渲染
-- [x] **超大文件截断** — ☑ 静态核验:transform.ts 第 21 行 `rawText.length>50MB → partial`,`message`=「文件过大,已截断前50MB分析」(与 spec 文案一致);纯逻辑分支当前无单测覆盖——待人工/后续补测
+- [x] **超大文件截断** — ☑ (test/log-analyzer.test.ts「>50MB input returns ok over truncated slice」:>`50MB` 输入返回 `status:'ok'`,对前 50MB 截断切片分析,`totalLines` < 原始行数,且 >0;transform.ts 在 split 前截断,非 `partial` 错误)
 
 ### Requirement: 本地离线与分块异步
 - [x] **纯函数可测** — ☑ (test/log-analyzer.test.ts analyzeLog/splitContextLines 直接调用断言确定输出)+ 静态核验零网络(全本地前端计算)

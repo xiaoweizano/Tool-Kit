@@ -34,6 +34,22 @@ describe('analyzeLog', () => {
     expect(r.status).toBe('error')
     if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
+  it('>50MB input returns ok over truncated slice', () => {
+    // WARN lines skip the keyword/endpoint heavy path; few moderate-line inputs
+    // keep per-line regex-compilation cost and peak memory low while still
+    // exceeding 50MB so the truncation branch fires.
+    const line = 'WARN ' + 'x'.repeat(1_000_000) + '\n'  // ~1MB/line
+    const big = line.repeat(60)                          // ~57MB > 50MB
+    expect(big.length).toBeGreaterThan(50 * 1024 * 1024)
+    const fullLines = big.split('\n').length - 1
+    const r = analyzeLog(big)
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.totalLines).toBeGreaterThan(0)
+      expect(r.data.totalLines).toBeLessThan(fullLines)
+      expect(r.data.levelStats.length).toBeGreaterThan(0)
+    }
+  })
 })
 
 describe('splitContextLines', () => {

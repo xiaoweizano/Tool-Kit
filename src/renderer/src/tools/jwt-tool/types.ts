@@ -1,4 +1,6 @@
-export type JwtAlg = 'HS256' | 'HS384' | 'HS512' | 'RS256' | 'RS384' | 'RS512'
+// Only HMAC (symmetric) algorithms are currently wired. RS* (asymmetric)
+// signing/verification is deferred to v2 (would require key import UI).
+export type JwtAlg = 'HS256' | 'HS384' | 'HS512'
 export interface JwtResult {
   header?: Record<string, unknown>
   payload?: Record<string, unknown>

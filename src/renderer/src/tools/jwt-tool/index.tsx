@@ -6,7 +6,8 @@ import { runTransform } from '@core/transform.channel'
 import type { ToolResult } from '@core/types'
 import type { JwtResult } from './types'
 
-const ALGS = ['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+// HS* only — RS* (asymmetric) is deferred to v2 (needs key import UI).
+const ALGS = ['HS256', 'HS384', 'HS512']
 
 export default function JwtToolPage(): JSX.Element {
   const { input, setInput, phase, result } = useLiveTransform<string, JwtResult>('jwt-tool')

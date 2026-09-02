@@ -23,7 +23,7 @@
 ## 4. password-generator 纯函数层
 
 - [x] 4.1 `generatePassword(opts): string`:`crypto.getRandomValues` 加密安全随机,长度/字符集
-- [x] 4.2 `encryptAes(passphrase, plaintext)` / `decryptAes(passphrase, ciphertext)`:Web Crypto AES-256-GCM + PBKDF2,输出 base64(iv.tag.ciphertext)
+- [x] 4.2 `encryptAes(passphrase, plaintext)` / `decryptAes(passphrase, ciphertext)`:Web Crypto AES-256-GCM + PBKDF2(每加密随机 16 字节 salt),输出 base64(salt.iv.tag.ciphertext)
 - [x] 4.3 `generateRsaKeyPair()` / `encryptRsa(publicPem, plaintext)` / `decryptRsa(privatePem, ciphertext)`:Web Crypto RSA-OAEP/SHA-256,PKCS#8/PKCS#1 PEM
 - [x] 4.4 `hashBcrypt(plaintext)` / `verifyBcrypt(plaintext, hash)`:bcryptjs hashSync/compareSync(cost 默认 10)
 
@@ -50,7 +50,7 @@
 ## 8. 收尾验证
 
 - [x] 8.1 `pnpm typecheck` 通过
-- [x] 8.2 `pnpm lint` 通过(部分:本项目文件——三个 crypto 工具 + 其测试——lint 通过;仅 `src/renderer/src/tools/es-query-builder/components/ConditionNode.tsx` 既有 `isRange` unused 错误,为 plan 之前已存在、超出本 change 范围,未修复)
+- [x] 8.2 `pnpm lint` 通过(本项目文件全量 lint 通过;`es-query-builder/components/ConditionNode.tsx` 既有的 `isRange` unused 错误已在 commit 2cf6a76 修复,`eslint .` 全清)
 - [x] 8.3 `pnpm test` 全绿
 - [x] 8.4 spec-checklist(password-crypto-tools)逐条核对 Scenario 通过
 - [x] 8.5 `openspec validate password-crypto-tools` 通过

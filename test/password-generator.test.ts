@@ -17,10 +17,18 @@ describe('AES round-trip', () => {
     const e = await encryptAes('secret', 'hello world')
     expect(e.status).toBe('ok')
     if (e.status === 'ok') {
+      // format: base64(salt[16] | iv[12] | ciphertext+tag) — must parse salt+iv back out
+      const raw = Uint8Array.from(atob(e.data), (c) => c.charCodeAt(0))
+      expect(raw.length).toBeGreaterThanOrEqual(16 + 12)
       const d = await decryptAes('secret', e.data)
       expect(d.status).toBe('ok')
       if (d.status === 'ok') expect(d.data).toBe('hello world')
     }
+  })
+  it('two encryptions of same plaintext differ (per-encryption salt)', async () => {
+    const a = await encryptAes('secret', 'same')
+    const b = await encryptAes('secret', 'same')
+    if (a.status === 'ok' && b.status === 'ok') expect(a.data).not.toBe(b.data)
   })
   it('wrong passphrase fails decrypt', async () => {
     const e = await encryptAes('secret', 'hello')

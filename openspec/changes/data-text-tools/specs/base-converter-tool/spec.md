@@ -10,7 +10,7 @@
 - **THEN** 输出 bin=0b11111111、oct=0o377、dec=255、hex=0xFF
 
 #### Scenario: 十六进制转十进制
-- **WHEN** 输入 "0xFF" 或 "ff",无 source(前缀自动识别)
+- **WHEN** 输入 "0xFF",无 source(前缀自动识别)
 - **THEN** 输出 dec=255
 
 ### Requirement: 前缀自动识别

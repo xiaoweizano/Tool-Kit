@@ -2,7 +2,9 @@ import type { ToolResult } from '@core/types'
 import { jwtVerify, SignJWT } from 'jose'
 import type { JwtResult, JwtAlg } from './types'
 
-const SUPPORTED_ALGS: JwtAlg[] = ['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+// HS* only. RS*(asymmetric) requires a key-import/PEM UI and is deferred to v2;
+// the symmetric `textToKey` path cannot produce RS signatures.
+const SUPPORTED_ALGS: JwtAlg[] = ['HS256', 'HS384', 'HS512']
 
 const textToKey = (secret: string): Uint8Array => new TextEncoder().encode(secret)
 
@@ -56,7 +58,7 @@ export async function renewJwt(token: string, secret: string, newExpiry = '1h'):
   if (!payload) return { status: 'error', kind: 'invalid-input', message: 'JWT 解码失败' }
   const header = decodePart(parts[0])
   const headerAlg = header && typeof header.alg === 'string' ? header.alg : ''
-  const SUPPORTED = ['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512']
+  const SUPPORTED = ['HS256', 'HS384', 'HS512']
   const alg = (SUPPORTED.includes(headerAlg) ? headerAlg : 'HS256') as JwtAlg
   return signJwt(JSON.stringify(payload), secret, alg, newExpiry)
 }

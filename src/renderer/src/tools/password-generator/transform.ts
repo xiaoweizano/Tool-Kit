@@ -20,11 +20,11 @@ export function generatePassword(opts: RandomGenOpts): ToolResult<string> {
   return { status: 'ok', data: out }
 }
 
-const getKey = async (passphrase: string): Promise<CryptoKey> => {
+const getKey = async (passphrase: string, salt: BufferSource): Promise<CryptoKey> => {
   const enc = new TextEncoder().encode(passphrase)
   const baseKey = await crypto.subtle.importKey('raw', enc, 'PBKDF2', false, ['deriveKey'])
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: enc, iterations: 100000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
     baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
   )
 }
@@ -32,11 +32,15 @@ const getKey = async (passphrase: string): Promise<CryptoKey> => {
 export async function encryptAes(passphrase: string, plaintext: string): Promise<ToolResult<string>> {
   if (!plaintext) return { status: 'error', kind: 'invalid-input', message: '请输入明文' }
   try {
-    const key = await getKey(passphrase)
+    // Random 16-byte salt per encryption (passphrase padding must NOT be reused
+    // as the PBKDF2 salt — no per-encryption randomness would let identical
+    // plaintexts derive identical keys).
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+    const key = await getKey(passphrase, salt)
     const iv = crypto.getRandomValues(new Uint8Array(12))
     const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext))
-    const full = new Uint8Array(iv.length + ct.byteLength)
-    full.set(iv); full.set(new Uint8Array(ct), iv.length)
+    const full = new Uint8Array(salt.length + iv.length + ct.byteLength)
+    full.set(salt); full.set(iv, salt.length); full.set(new Uint8Array(ct), salt.length + iv.length)
     return { status: 'ok', data: btoa(String.fromCharCode(...full)) }
   } catch { return { status: 'error', kind: 'invalid-input', message: '加密失败' } }
 }
@@ -44,8 +48,10 @@ export async function encryptAes(passphrase: string, plaintext: string): Promise
 export async function decryptAes(passphrase: string, ciphertext: string): Promise<ToolResult<string>> {
   try {
     const raw = Uint8Array.from(atob(ciphertext), (c) => c.charCodeAt(0))
-    const iv = raw.slice(0, 12), ct = raw.slice(12)
-    const key = await getKey(passphrase)
+    // salt(16) | iv(12) | ciphertext+tagauth
+    if (raw.length < 16 + 12) throw new Error('too short')
+    const salt = raw.slice(0, 16), iv = raw.slice(16, 28), ct = raw.slice(28)
+    const key = await getKey(passphrase, salt)
     const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct)
     return { status: 'ok', data: new TextDecoder().decode(pt) }
   } catch { return { status: 'error', kind: 'invalid-input', message: '解密失败:密钥不匹配或密文损坏' } }

@@ -16,9 +16,19 @@ export function splitContextLines(rawText: string, lineIndex: number, n = 3): st
 }
 
 export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
-  const lines = rawText.split(/\r?\n/).filter((l) => l.trim() !== '')
+  // Truncate BEFORE splitting/analyzing so we never materialize a huge array only
+  // to discard it. The >50MB case returns a genuine partial analysis (status 'ok',
+  // data over the truncated slice) rather than a data-less error.
+  let text = rawText
+  if (text.length > 50 * 1024 * 1024) text = text.slice(0, 50 * 1024 * 1024)
+
+  const rawLines = text.split(/\r?\n/)
+  // Track each analyzed (non-blank) line's ORIGINAL index into the raw split, so
+  // `sampleLine` stays consistent with `splitContextLines` (which slices the raw
+  // split — blank lines must not shift the reported context window).
+  const lines: Array<{ text: string; originalIndex: number }> = []
+  rawLines.forEach((l, i) => { if (l.trim() !== '') lines.push({ text: l, originalIndex: i }) })
   if (lines.length === 0) return { status: 'error', kind: 'invalid-input', message: '日志为空' }
-  if (rawText.length > 50 * 1024 * 1024) return { status: 'error', kind: 'partial', message: '文件过大,已截断前50MB分析' }
 
   const levelCount: Record<string, number> = {}
   const levelLines: Record<string, number[]> = {}
@@ -30,7 +40,9 @@ export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
   const pathErrors = new Map<string, Map<string, number>>()
   const kwCount = new Map<string, number>()
 
-  lines.forEach((line, idx) => {
+  lines.forEach((entry, idx) => {
+    const line = entry.text
+    const lineNo = entry.originalIndex
     // level
     let level = 'INFO'
     const upper = line.toUpperCase()
@@ -56,7 +68,7 @@ export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
       const desc = exceptionLineMessage(line, msg)
       let cur = excByHash.get(key)
       if (!cur) {
-        cur = { type, message: desc, count: 0, sampleLine: idx, stackHash: hash(key) }
+        cur = { type, message: desc, count: 0, sampleLine: lineNo, stackHash: hash(key) }
         excByHash.set(key, cur)
       } else if (desc && cur.message === '') {
         cur.message = desc

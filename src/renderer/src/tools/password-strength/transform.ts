@@ -68,8 +68,11 @@ function makeCandidate(o: Required<Pick<GenerateOpts,'minLength'>> & GenerateOpt
   if (!allow) allow = lower + digit
   const chars = required.map((r) => randChar(pools[r].split('').filter((c) => !(o.excludeChars ?? '').includes(c)).join('') || pools[r]))
   while (chars.length < o.minLength) chars.push(randChar(allow))
-  // shuffle
-  for (let i = chars.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [chars[i], chars[j]] = [chars[j], chars[i]] }
+  // shuffle (CSPRNG Fisher-Yates — never Math.random for password material)
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1)
+    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+  }
   return chars.join('')
 }
 
