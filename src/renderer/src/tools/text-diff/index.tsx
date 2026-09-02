@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CopyButton } from '@components/CopyButton'
-import { diffText, textStats, applyCase, segmentText } from './transform'
-import type { DiffMode, TextStats, CaseMode, SegmentType, Segment } from './types'
+import { diffText, diffSideBySide, textStats, applyCase, segmentText } from './transform'
+import type { DiffMode, TextStats, CaseMode, SegmentType, Segment, CellKind, DiffRow } from './types'
 
 type TabId = 'diff' | 'stats' | 'case' | 'segment'
 
@@ -37,7 +37,7 @@ const STAT_ITEMS: { key: keyof Pick<TextStats, 'chars' | 'letters' | 'digits' | 
   { key: 'digits', label: '数字' },
   { key: 'punct', label: '标点' },
   { key: 'symbols', label: '符号' },
-  { key: 'spaces', label: '空白' },
+  { key: 'spaces', label: '空格' },
   { key: 'words', label: '单词' },
   { key: 'lines', label: '行数' },
   { key: 'paragraphs', label: '段落' },
@@ -70,6 +70,36 @@ const EmptyHint = ({ children }: { children: string }): JSX.Element => (
   <div className="border border-base-300 bg-base-200/50 p-6 text-center text-sm text-neutral">{children}</div>
 )
 
+const cellCls = (kind: CellKind): string => {
+  if (kind === 'removed') return 'bg-red-500/15 text-red-300'
+  if (kind === 'added') return 'bg-green-500/15 text-green-300'
+  if (kind === 'same') return 'text-base-content'
+  return '' // blank -> transparent
+}
+
+const SideBySide = ({ rows }: { rows: DiffRow[] }): JSX.Element => (
+  <div className="rounded border border-base-300 bg-base-100">
+    <div className="grid grid-cols-2 border-b border-base-300 bg-base-200/60 font-mono text-[11px] tracking-widest text-neutral">
+      <div className="px-3 py-2">原文本 A</div>
+      <div className="border-l border-base-300 px-3 py-2">对比文本 B</div>
+    </div>
+    {rows.map((row, i) => (
+      <div key={i} className="grid grid-cols-2">
+        <div className={`whitespace-pre-wrap break-words border-b border-base-300 px-3 py-1 font-mono text-sm ${cellCls(row.left.kind)}`}>
+          <span className="mr-2 select-none text-neutral/40">{i + 1}</span>{row.left.text || ' '}
+        </div>
+        <div className={`whitespace-pre-wrap break-words border-b border-l border-base-300 px-3 py-1 font-mono text-sm ${cellCls(row.right.kind)}`}>
+          <span className="mr-2 select-none text-neutral/40">{i + 1}</span>{row.right.text || ' '}
+        </div>
+      </div>
+    ))}
+    <div className="flex gap-4 border-t border-base-300 bg-base-200/60 px-3 py-2 font-mono text-[11px] text-neutral">
+      <span className="text-green-300">绿=新增</span>
+      <span className="text-red-300">红=删除</span>
+    </div>
+  </div>
+)
+
 export default function TextDiffPage(): JSX.Element {
   const [tab, setTab] = useState<TabId>('diff')
 
@@ -77,7 +107,9 @@ export default function TextDiffPage(): JSX.Element {
   const [textA, setTextA] = useState('')
   const [textB, setTextB] = useState('')
   const [diffMode, setDiffMode] = useState<DiffMode>('line')
+  const [diffView, setDiffView] = useState<'side' | 'merged'>('side')
   const diff = useMemo(() => (textA || textB) ? diffText(textA, textB, diffMode) : null, [textA, textB, diffMode])
+  const sideDiff = useMemo(() => (textA || textB) ? diffSideBySide(textA, textB, diffMode) : null, [textA, textB, diffMode])
 
   // 统计/大小写/分词 share one input
   const [single, setSingle] = useState('')
@@ -126,12 +158,27 @@ export default function TextDiffPage(): JSX.Element {
                 <button key={m.id} className={`btn btn-sm ${diffMode === m.id ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setDiffMode(m.id)}>{m.label}</button>
               ))}
             </div>
+            <div className="mb-3 flex flex-wrap gap-2">
+              <button className={`btn btn-sm ${diffView === 'side' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setDiffView('side')}>左右对比</button>
+              <button className={`btn btn-sm ${diffView === 'merged' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setDiffView('merged')}>合并</button>
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               <textarea value={textA} onChange={(e) => setTextA(e.target.value)} placeholder="原文本 A" className="textarea textarea-bordered w-full font-mono" rows={8} />
               <textarea value={textB} onChange={(e) => setTextB(e.target.value)} placeholder="对比文本 B" className="textarea textarea-bordered w-full font-mono" rows={8} />
             </div>
             <div className="mt-4">
-              {diff?.status === 'ok' ? (
+              {diffView === 'side' ? (
+                sideDiff?.status === 'ok' ? (
+                  <SideBySide rows={sideDiff.data} />
+                ) : sideDiff ? (
+                  <div role="alert" className="border border-error/60 bg-base-200 p-4 font-mono text-sm">
+                    <span className="text-error">✕ ERROR · 输入无效</span>
+                    <p className="mt-1 text-base-content">{sideDiff.message}</p>
+                  </div>
+                ) : (
+                  <EmptyHint>输入两侧文本开始对比…</EmptyHint>
+                )
+              ) : diff?.status === 'ok' ? (
                 <div className="rounded border border-base-300 bg-base-100 p-4" dangerouslySetInnerHTML={{ __html: diff.data }} />
               ) : diff ? (
                 <div role="alert" className="border border-error/60 bg-base-200 p-4 font-mono text-sm">

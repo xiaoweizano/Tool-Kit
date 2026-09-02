@@ -29,6 +29,7 @@
 - [x] **逐行差异高亮** — ☑ (test/text-diff.test.ts「line mode highlights changed line」:输出含 del 删除标记)
 - [x] **逐词差异高亮** — ☑ (test/text-diff.test.ts「word mode highlights a changed word」:diffWords 生成词级高亮,输出含 `del` 删除标记 + `text-success` 新增标记)
 - [x] **空输入返回 invalid-input** — ☑ (test/text-diff.test.ts「empty one side invalid-input」:message「请粘贴两段文本」)
+- [x] **左右分栏成对行** — ☑ (test/text-diff.test.ts「pairs removed/added lines on the same row」:diffSideBySide("a\nb\nc","a\nX\nc","line") 返回 DiffRow[] 且 b/X 同行——left.kind=removed/right.kind=added,same 行左右同为 same;另有 diffSideBySide「empty one side invalid-input」返回 invalid-input)
 
 ### Requirement: 三模式切换
 - [x] **切换模式刷新结果** — ☐ 待人工:切换 line/word/char tab 触发 setField({mode}) 即时刷新(text-diff/index.tsx MODES);三种粒度核心由 transform.ts 支持
@@ -94,8 +95,8 @@
 ## 覆盖统计
 
 - **Requirement**: 20(base-converter-tool 5 + text-diff-tool 7 + log-analyzer-tool 8)
-- **Scenario**: 28(base-converter-tool 7 + text-diff-tool 12 + log-analyzer-tool 9)
-- **已验证**: 28(自动化测试 22 + 静态核验 1 + 待人工 5)
+- **Scenario**: 29(base-converter-tool 7 + text-diff-tool 13 + log-analyzer-tool 9)
+- **已验证**: 29(自动化测试 23 + 静态核验 1 + 待人工 5)
   - base-converter-tool: 自动化 5 + 静态核验 0 + 待人工 2 = 7
-  - text-diff-tool: 自动化 9 + 静态核验 0 + 待人工 3 = 12
+  - text-diff-tool: 自动化 10 + 静态核验 0 + 待人工 3 = 13
   - log-analyzer-tool: 自动化 8 + 静态核验 1 + 待人工 0 = 9
