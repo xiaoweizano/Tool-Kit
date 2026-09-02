@@ -135,7 +135,7 @@ export const tools: ToolDescriptor[] = [
     capability: { offline: true }
   },
   {
-    id: 'text-diff', name: '文本对比', icon: TextDiffIcon,
+    id: 'text-diff', name: '文本处理', icon: TextDiffIcon,
     route: '/tools/text-diff', component: TextDiffPageLazy,
     capability: { offline: true }
   },
