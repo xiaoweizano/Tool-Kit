@@ -54,4 +54,17 @@ describe('improvePassword', () => {
     const r = improvePassword('', { targetLevel: 'medium' })
     expect(r.status).toBe('error'); if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
+  it('改造 Wang123456! 到 strong(打散连续段/键盘序列后≥强)', () => {
+    const r = improvePassword('Wang123456!', { targetLevel: 'strong' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      const a = analyzeStrength(r.data)
+      if (a.status === 'ok') expect(a.data.level).toBe('strong')
+      expect(a.status === 'ok' ? a.data.score : 0).toBeGreaterThan(70)
+      expect(/[^a-zA-Z0-9]/.test(r.data)).toBe(true)   // all 4 charsets
+      expect(/[A-Z]/.test(r.data)).toBe(true)
+      expect(/[a-z]/.test(r.data)).toBe(true)
+      expect(/[0-9]/.test(r.data)).toBe(true)
+    }
+  })
 })

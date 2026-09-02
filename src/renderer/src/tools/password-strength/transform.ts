@@ -4,7 +4,7 @@ import type { StrengthReport, StrengthCheck, Level, GenerateOpts } from './types
 const COMMON = ['123456','password','12345678','qwerty','abc123','111111','123123','admin','letmein','welcome','monkey','iloveyou','1234567890','1234567','000000','dragon','sunshine','master','shadow','superman','qwertyuiop','654321','1qaz2wsx','zaq1xsw2','baseball','trustno1','hello','abcabc','a123456','123321','666666','121212','qwe123','asdfgh','zxcvbn','passwd','admin123','welcome1','p@ssw0rd']
 const SEQ = 'abcdefghijklmnopqrstuvwxyz0123456789qwertyuiopasdfghjklzxcvbnm'
 const CHARSET = { lower: /[a-z]/, upper: /[A-Z]/, digit: /[0-9]/, symbol: /[^a-zA-Z0-9]/ }
-const KEYBOARD = ['qwerty','asdfgh','zxcvbn','1qaz2wsx','qazwsx','ab','12','23','34','45','56','67','78','89','0q','as','df','qw','wer','sdf','xcv']
+const KEYROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm', '1234567890']
 
 const hasSeq = (s: string): boolean => {
   for (let i = 0; i + 3 <= s.length; i++) {
@@ -15,9 +15,31 @@ const hasSeq = (s: string): boolean => {
 }
 const hasKeyboard = (s: string): boolean => {
   const lo = s.toLowerCase()
-  return KEYBOARD.some((k) => lo.includes(k))
+  for (let i = 0; i + 3 <= lo.length; i++) {
+    const t = lo.slice(i, i + 3)
+    for (const row of KEYROWS) if (row.includes(t)) return true
+  }
+  return false
 }
 const hasRepeat = (s: string): boolean => /(.)\1{2,}/.test(s)
+const SYMBOLS = '!@#$%^&*()-_=+[]{};:,.?/~`'
+const randChar = (set: string): string => { const b = new Uint32Array(1); crypto.getRandomValues(b); return set[b[0] % set.length] }
+function breakRuns(out: string): string {
+  let guard = 0
+  while (guard < 80 && (hasSeq(out) || hasKeyboard(out) || hasRepeat(out))) {
+    guard++
+    const lo = out.toLowerCase()
+    let pos = -1
+    for (let i = 0; i + 3 <= lo.length; i++) {
+      const t = lo.slice(i, i + 3)
+      if (SEQ.indexOf(t) >= 0 || KEYROWS.some((r) => r.includes(t))) { pos = i + 1; break }
+    }
+    if (pos < 0) { const m = out.match(/(.)\1{2,}/); if (m) { pos = out.indexOf(m[1].repeat(2)) + 1 } }
+    if (pos < 0) break
+    out = out.slice(0, pos) + randChar(SYMBOLS) + out.slice(pos)
+  }
+  return out
+}
 
 function isCommon(p: string): boolean { return COMMON.includes(p.toLowerCase()) }
 
@@ -58,7 +80,6 @@ export function improvePassword(password: string, opts: GenerateOpts): ToolResul
   const need = opts.requireCharsets ?? (target === 'strong' ? ['lower','upper','digit','symbol'] : target === 'medium' ? ['lower','upper','digit'] : ['lower','digit'])
   const pools: Record<string,string> = { lower:'abcdefghijklmnopqrstuvwxyz', upper:'ABCDEFGHIJKLMNOPQRSTUVWXYZ', digit:'0123456789', symbol:'!@#$%^&*()-_=+[]{};:,.<>?' }
   const allowed = (set: string): string => opts.excludeChars ? [...set].filter((c) => !opts.excludeChars!.includes(c)).join('') : set
-  const randChar = (set: string): string => { const b = new Uint32Array(1); crypto.getRandomValues(b); return set[b[0] % set.length] }
   const meets = (s: string, t: Level): boolean => {
     const a = analyzeStrength(s)
     if (a.status !== 'ok') return false
@@ -83,6 +104,8 @@ export function improvePassword(password: string, opts: GenerateOpts): ToolResul
     result = result.slice(0, pos) + randChar(pool) + result.slice(pos)
     guard++
   }
+  // 2.5) 打散连续字符/键盘序列/重复片段,避免模式惩罚把分数拖垮
+  result = breakRuns(result)
   // 3) if not meeting target, inject extra random chars (CSPRNG position) and retry a few times
   for (let i = 0; i < 12 && !meets(result, target); i++) {
     const cs = (['upper','digit','symbol','lower'] as const)[i % 4]
