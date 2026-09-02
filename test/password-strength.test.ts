@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { analyzeStrength, generateByRules } from '@tools/password-strength/transform'
+import { analyzeStrength, improvePassword } from '@tools/password-strength/transform'
 
 describe('analyzeStrength', () => {
   it('弱密码 <40, 命中纯数字/顺序', () => {
@@ -25,20 +25,33 @@ describe('analyzeStrength', () => {
   })
 })
 
-describe('generateByRules', () => {
-  it('generateByRules produces strong-level password', () => {
-    const r = generateByRules({ targetLevel: 'strong', minLength: 16 })
+describe('improvePassword', () => {
+  it('改造输入到 strong:保留 base,补全 4 字符集+长度', () => {
+    const r = improvePassword('mypassword2024', { targetLevel: 'strong' })
     expect(r.status).toBe('ok')
     if (r.status === 'ok') {
-      expect(r.data.length).toBeGreaterThanOrEqual(16)
-      expect(analyzeStrength(r.data).status).toBe('ok')
+      expect(r.data.length).toBeGreaterThanOrEqual(12)
+      expect(/[a-z]/.test(r.data)).toBe(true)
+      expect(/[A-Z]/.test(r.data)).toBe(true)
+      expect(/[0-9]/.test(r.data)).toBe(true)
+      expect(/[^a-zA-Z0-9]/.test(r.data)).toBe(true)
+      expect(r.data.length).toBeGreaterThanOrEqual('mypassword2024'.length) // 非随机,是改造输入
       const a = analyzeStrength(r.data)
       if (a.status === 'ok') expect(a.data.level).toBe('strong')
     }
   })
-  it('generateByRules excludes chars', () => {
-    const r = generateByRules({ targetLevel: 'strong', minLength: 12, excludeChars: '0Ol1' })
+  it('改造输入到 medium(至少不再是弱)', () => {
+    const r = improvePassword('123', { targetLevel: 'medium' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') { const a = analyzeStrength(r.data); if (a.status === 'ok') expect(a.data.level).not.toBe('weak') }
+  })
+  it('excludeChars 排除字符不出现在结果', () => {
+    const r = improvePassword('zzzzzzzz', { targetLevel: 'strong', excludeChars: '0Ol1' })
     expect(r.status).toBe('ok')
     if (r.status === 'ok') expect(/[0Ol1]/.test(r.data)).toBe(false)
+  })
+  it('空输入返回 invalid-input', () => {
+    const r = improvePassword('', { targetLevel: 'medium' })
+    expect(r.status).toBe('error'); if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
 })

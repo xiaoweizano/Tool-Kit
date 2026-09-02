@@ -47,7 +47,7 @@ export default function PasswordStrengthPage(): JSX.Element {
               <option value="weak">弱</option><option value="medium">中</option><option value="strong">强</option>
             </select>
           </label>
-          <button className="btn btn-sm btn-primary" onClick={async () => { const r = await runTransform('password-strength', '', { action: 'generate', targetLevel: target }); if (r.status === 'ok') setGenOut(r.data as string) }}>生成</button>
+          <button className="btn btn-sm btn-primary" disabled={!input} onClick={async () => { const r = await runTransform('password-strength', input, { action: 'generate', targetLevel: target }); if (r.status === 'ok') setGenOut(r.data as string) }}>生成</button>
         </div>
         {genOut && <pre className="mt-2 overflow-auto rounded bg-base-100 p-2 font-mono text-sm">{genOut}</pre>}
       </section>

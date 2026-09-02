@@ -9,7 +9,7 @@ import { matchRegex } from '@tools/regex-generator/transform'
 import { parseCreateTable } from '@tools/testdata-gen/transform'
 import { batchTransform } from '@tools/batch-transform/transform'
 import { buildQueryDsl, parseQueryDsl, generateCode } from '@tools/es-query-builder/transform'
-import { analyzeStrength, generateByRules } from '@tools/password-strength/transform'
+import { analyzeStrength, improvePassword } from '@tools/password-strength/transform'
 import { parseJwt, verifyJwt, signJwt, renewJwt } from '@tools/jwt-tool/transform'
 import type { JwtAlg } from '@tools/jwt-tool/types'
 import type { Level } from '@tools/password-strength/types'
@@ -50,7 +50,7 @@ registry.set('password-strength', ((input: string, opts?: TransformOpts) => {
   const action = opts?.action ?? 'analyze'
   if (action === 'generate') {
     const requireCharsets = typeof opts?.requireCharsets === 'string' ? opts.requireCharsets.split(',') : undefined
-    return generateByRules({
+    return improvePassword(input, {
       targetLevel: (opts?.targetLevel as Level) ?? 'medium',
       minLength: Number(opts?.minLength ?? 12),
       requireCharsets,

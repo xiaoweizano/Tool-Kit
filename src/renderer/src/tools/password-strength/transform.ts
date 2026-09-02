@@ -1,5 +1,5 @@
 import type { ToolResult } from '@core/types'
-import type { StrengthReport, StrengthCheck, Level } from './types'
+import type { StrengthReport, StrengthCheck, Level, GenerateOpts } from './types'
 
 const COMMON = ['123456','password','12345678','qwerty','abc123','111111','123123','admin','letmein','welcome','monkey','iloveyou','1234567890','1234567','000000','dragon','sunshine','master','shadow','superman','qwertyuiop','654321','1qaz2wsx','zaq1xsw2','baseball','trustno1','hello','abcabc','a123456','123321','666666','121212','qwe123','asdfgh','zxcvbn','passwd','admin123','welcome1','p@ssw0rd']
 const SEQ = 'abcdefghijklmnopqrstuvwxyz0123456789qwertyuiopasdfghjklzxcvbnm'
@@ -51,43 +51,43 @@ export function analyzeStrength(password: string): ToolResult<StrengthReport> {
   return { status: 'ok', data: { score, level, length: len, checks, suggestions } }
 }
 
-import type { GenerateOpts } from './types'
-
-function randChar(set: string): string {
-  const buf = new Uint32Array(1)
-  crypto.getRandomValues(buf)
-  return set[buf[0] % set.length]
-}
-function makeCandidate(o: Required<Pick<GenerateOpts,'minLength'>> & GenerateOpts): string {
-  const lower = 'abcdefghijklmnopqrstuvwxyz', upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', digit = '0123456789', symbol = '!@#$%^&*()-_=+[]{};:,.<>?'
-  const required = o.requireCharsets ?? (o.targetLevel === 'strong' ? ['lower','upper','digit','symbol'] : ['lower','digit'])
-  const pools: Record<string,string> = { lower, upper, digit, symbol }
-  let allow = required.map((r) => pools[r]).join('')
-  const ex = o.excludeChars
-  if (ex) allow = [...allow].filter((c) => !ex.includes(c)).join('')
-  if (!allow) allow = lower + digit
-  const chars = required.map((r) => randChar(pools[r].split('').filter((c) => !(o.excludeChars ?? '').includes(c)).join('') || pools[r]))
-  while (chars.length < o.minLength) chars.push(randChar(allow))
-  // shuffle (CSPRNG Fisher-Yates — never Math.random for password material)
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1)
-    ;[chars[i], chars[j]] = [chars[j], chars[i]]
-  }
-  return chars.join('')
-}
-
-export function generateByRules(opts: GenerateOpts): ToolResult<string> {
-  if ((opts.minLength ?? 12) < 4) return { status: 'error', kind: 'invalid-input', message: '长度至少 4' }
+export function improvePassword(password: string, opts: GenerateOpts): ToolResult<string> {
+  if (!password) return { status: 'error', kind: 'invalid-input', message: '请先输入一个密码' }
   const target = opts.targetLevel ?? 'medium'
-  for (let i = 0; i < 2000; i++) {
-    const cand = makeCandidate({ ...opts, minLength: opts.minLength ?? 12 })
-    const a = analyzeStrength(cand)
-    if (a.status === 'ok') {
-      const lv = a.data.level
-      if ((target === 'strong' && lv === 'strong') || (target === 'medium' && lv !== 'weak') || (target === 'weak')) {
-        return { status: 'ok', data: cand }
-      }
+  const minLen = Math.max(opts.minLength ?? (target === 'strong' ? 12 : target === 'medium' ? 8 : password.length), password.length)
+  const need = opts.requireCharsets ?? (target === 'strong' ? ['lower','upper','digit','symbol'] : target === 'medium' ? ['lower','upper','digit'] : ['lower','digit'])
+  const pools: Record<string,string> = { lower:'abcdefghijklmnopqrstuvwxyz', upper:'ABCDEFGHIJKLMNOPQRSTUVWXYZ', digit:'0123456789', symbol:'!@#$%^&*()-_=+[]{};:,.<>?' }
+  const allowed = (set: string): string => opts.excludeChars ? [...set].filter((c) => !opts.excludeChars!.includes(c)).join('') : set
+  const randChar = (set: string): string => { const b = new Uint32Array(1); crypto.getRandomValues(b); return set[b[0] % set.length] }
+  const meets = (s: string, t: Level): boolean => {
+    const a = analyzeStrength(s)
+    if (a.status !== 'ok') return false
+    if (t === 'strong') return a.data.level === 'strong'
+    if (t === 'medium') return a.data.level !== 'weak'
+    return true
+  }
+  let result = password
+  // 1) ensure each required charset present (insert 1 char, into the middle to break runs)
+  for (const cs of need) {
+    if (!CHARSET[cs as keyof typeof CHARSET].test(result)) {
+      const pool = allowed(pools[cs]) || pools[cs]
+      if (pool) { const pos = result.length ? Math.floor(result.length / 2) : 0; result = result.slice(0, pos) + randChar(pool) + result.slice(pos) }
     }
   }
-  return { status: 'ok', data: makeCandidate({ ...opts, minLength: opts.minLength ?? 12 }) }
+  // 2) pad to minLen via SPREAD inserts (position = (len+1)*k/(n+1), interleaved, breaks contiguous runs)
+  let guard = 0
+  const pool = need.map((c) => allowed(pools[c]) || pools[c]).join('')
+  while (result.length < minLen && pool && guard < 300) {
+    const k = result.length - password.length + 1
+    const pos = Math.floor(((result.length + 1) * k) / (k + 1))
+    result = result.slice(0, pos) + randChar(pool) + result.slice(pos)
+    guard++
+  }
+  // 3) if not meeting target, inject extra random chars (CSPRNG position) and retry a few times
+  for (let i = 0; i < 12 && !meets(result, target); i++) {
+    const cs = (['upper','digit','symbol','lower'] as const)[i % 4]
+    const p = allowed(pools[cs]) || pools[cs]
+    if (p) { const pos = crypto.getRandomValues(new Uint32Array(1))[0] % (result.length + 1); result = result.slice(0, pos) + randChar(p) + result.slice(pos) }
+  }
+  return { status: 'ok', data: result }
 }

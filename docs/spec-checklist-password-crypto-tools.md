@@ -39,16 +39,16 @@
 - [x] **弱密码给出多条建议** — ☑ 静态核验:transform.ts checks[] 逐条生成 hint(如「含连续字符(如 123/abc),易被猜到」「建议长度 ≥12」「建议混合大小写/数字/符号」)
 - [x] **强密码建议为空提示良好** — ☑ 静态核验:transform.ts 无缺失维度时 `suggestions.push('密码强度良好')`
 
-### Requirement: 按目标强度生成密码
-- [x] **生成强档密码** — ☑ (test/password-strength.test.ts「generateByRules produces strong-level password」:targetLevel=strong → 长度≥16 且 level=strong)
-- [x] **生成符合自定义排除字符的密码** — ☑ (test/password-strength.test.ts「generateByRules excludes chars」:excludeChars '0Ol1' → 输出不含这些字符;minLength 达标)
+### Requirement: 改造当前输入密码到目标强度
+- [x] **改造强档密码** — ☑ (test/password-strength.test.ts「改造输入到 strong:保留 base,补全 4 字符集+长度」:"mypassword2024" → 长度≥12 且 level=strong)
+- [x] **excludeChars 排除字符不出现在结果** — ☑ (test/password-strength.test.ts「excludeChars 排除字符不出现在结果」:excludeChars '0Ol1' → 输出不含这些字符)
 
 ### Requirement: 实时分析
 - [x] **粘贴即实时分析** — ☐ 待人工:粘贴/输入防抖(150ms)即时刷新手测;useLiveTransform 防抖底层已由 test/uselivetransform.test.ts 覆盖
 - [x] **空输入回到 EMPTY** — ☐ 待人工:清空输入回 EMPTY 引导态手测(transform 层空→`invalid-input` 已由「空输入返回 invalid-input」测试覆盖;EMPTY 阶段为 useLiveTransform)
 
 ### Requirement: 免费离线无网络
-- [x] **纯函数可测** — ☑ (test/password-strength.test.ts analyzeStrength/generateByRules 纯函数,golden 断言精确输出;零网络本地计算)
+- [x] **纯函数可测** — ☑ (test/password-strength.test.ts analyzeStrength/improvePassword 纯函数,golden 断言精确输出;零网络本地计算)
 
 ## jwt-tool
 
