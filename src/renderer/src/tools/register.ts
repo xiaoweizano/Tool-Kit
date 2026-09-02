@@ -16,6 +16,9 @@ import { EsQueryIcon } from '@tools/es-query-builder/icon'
 import { PasswordStrengthIcon } from '@tools/password-strength/icon'
 import { JwtIcon } from '@tools/jwt-tool/icon'
 import { PasswordGenIcon } from '@tools/password-generator/icon'
+import { BaseConvIcon } from '@tools/base-converter/icon'
+import { TextDiffIcon } from '@tools/text-diff/icon'
+import { LogAnalyzerIcon } from '@tools/log-analyzer/icon'
 
 // lazy 放在 register.ts 而非页面 index.tsx,避免页面自引用自身模块的循环导入
 const JsonParserPage = lazy(() => import('@tools/json-parser'))
@@ -34,6 +37,9 @@ const EsQueryBuilderPageLazy = lazy(() => import('@tools/es-query-builder'))
 const PasswordStrengthPageLazy = lazy(() => import('@tools/password-strength'))
 const JwtToolPageLazy = lazy(() => import('@tools/jwt-tool'))
 const PasswordGeneratorPageLazy = lazy(() => import('@tools/password-generator'))
+const BaseConverterPageLazy = lazy(() => import('@tools/base-converter'))
+const TextDiffPageLazy = lazy(() => import('@tools/text-diff'))
+const LogAnalyzerPageLazy = lazy(() => import('@tools/log-analyzer'))
 
 // 加一个工具 = 在此数组追加一行(实现接口 + 目录),导航/路由自动生效
 export const tools: ToolDescriptor[] = [
@@ -115,6 +121,21 @@ export const tools: ToolDescriptor[] = [
   {
     id: 'password-generator', name: '密码生成', icon: PasswordGenIcon,
     route: '/tools/password-generator', component: PasswordGeneratorPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'base-converter', name: '进制转换', icon: BaseConvIcon,
+    route: '/tools/base-converter', component: BaseConverterPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'text-diff', name: '文本对比', icon: TextDiffIcon,
+    route: '/tools/text-diff', component: TextDiffPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'log-analyzer', name: '日志分析', icon: LogAnalyzerIcon,
+    route: '/tools/log-analyzer', component: LogAnalyzerPageLazy,
     capability: { offline: true }
   }
 ]

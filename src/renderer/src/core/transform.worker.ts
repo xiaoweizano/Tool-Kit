@@ -13,6 +13,10 @@ import { analyzeStrength, generateByRules } from '@tools/password-strength/trans
 import { parseJwt, verifyJwt, signJwt, renewJwt } from '@tools/jwt-tool/transform'
 import type { JwtAlg } from '@tools/jwt-tool/types'
 import type { Level } from '@tools/password-strength/types'
+import { convertBase } from '@tools/base-converter/transform'
+import type { Radix } from '@tools/base-converter/types'
+import { diffText } from '@tools/text-diff/transform'
+import type { DiffMode } from '@tools/text-diff/types'
 
 const registry = new Map<string, Transform<unknown, unknown, TransformOpts>>()
 // 注册行示例(加工具在此追加 import + 一行注册)。
@@ -65,6 +69,12 @@ registry.set('jwt-tool', ((input: string, opts?: TransformOpts) => {
   if (action === 'renew') return renewJwt(input, secret, expiry)
   return parseJwt(input)
 }) as unknown as Transform<unknown, unknown, TransformOpts>)
+registry.set('base-converter', ((input: string, opts?: TransformOpts) =>
+  convertBase(input, { source: opts?.source ? (Number(opts.source) as Radix) : undefined })
+) as Transform<unknown, unknown, TransformOpts>)
+registry.set('text-diff', ((input: { textA?: string; textB?: string; mode?: DiffMode }) =>
+  diffText(input?.textA ?? '', input?.textB ?? '', input?.mode ?? 'line')
+) as Transform<unknown, unknown, TransformOpts>)
 
 const unsupported = (id: string): ToolResult<never> => ({
   status: 'error', kind: 'unsupported', structure: id, message: '未注册的工具'
