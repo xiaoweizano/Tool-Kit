@@ -14,6 +14,9 @@ importers:
       comlink:
         specifier: ^4.4.0
         version: 4.4.2
+      diff:
+        specifier: ^9.0.0
+        version: 9.0.0
       docx:
         specifier: ^9.7.1
         version: 9.7.1
@@ -1727,6 +1730,10 @@ packages:
 
   detect-node@2.1.0:
     resolution: {integrity: sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==}
+
+  diff@9.0.0:
+    resolution: {integrity: sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw==}
+    engines: {node: '>=0.3.1'}
 
   dingbat-to-unicode@1.0.1:
     resolution: {integrity: sha512-98l0sW87ZT58pU4i61wa2OHwxbiYSbuxsCBozaVnYX2iCnr3bLM3fIes1/ej7h1YdOKuKt/MLs706TVnALA65w==}
@@ -4934,6 +4941,8 @@ snapshots:
 
   detect-node@2.1.0:
     optional: true
+
+  diff@9.0.0: {}
 
   dingbat-to-unicode@1.0.1: {}
 
