@@ -35,18 +35,22 @@ describe('analyzeLog', () => {
     if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
   it('>50MB input returns ok over truncated slice', () => {
-    // WARN lines skip the keyword/endpoint heavy path; few moderate-line inputs
-    // keep per-line regex-compilation cost and peak memory low while still
-    // exceeding 50MB so the truncation branch fires.
-    const line = 'WARN ' + 'x'.repeat(1_000_000) + '\n'  // ~1MB/line
-    const big = line.repeat(60)                          // ~57MB > 50MB
+    // Build the >50MB input from MANY SMALL lines (a short representative log
+    // line repeated), NOT from a few huge lines. Per-line `.trim()`/`.toUpperCase()`
+    // /regex-work on 1MB-long strings is pathological and hangs the worker, so we
+    // keep each line short while still exceeding 50MB to fire the truncation branch.
+    const line = '2026-08-29 14:30:00.000 ERROR [tid=abc] [rid=req1] POST /api/order 500 NullPointerException at OrderService.getOrder\n'
+    // reps is chosen so raw.length genuinely exceeds 50MB (the truncation path).
+    const reps = Math.ceil((50 * 1024 * 1024) / line.length) + 100
+    const big = line.repeat(reps)
     expect(big.length).toBeGreaterThan(50 * 1024 * 1024)
-    const fullLines = big.split('\n').length - 1
     const r = analyzeLog(big)
     expect(r.status).toBe('ok')
     if (r.status === 'ok') {
+      // Truncation happened: totalLines reflects the truncated slice, i.e. fewer
+      // lines than the full input contained.
       expect(r.data.totalLines).toBeGreaterThan(0)
-      expect(r.data.totalLines).toBeLessThan(fullLines)
+      expect(r.data.totalLines).toBeLessThan(reps)
       expect(r.data.levelStats.length).toBeGreaterThan(0)
     }
   })
