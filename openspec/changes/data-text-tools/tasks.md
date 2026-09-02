@@ -39,8 +39,8 @@
 ## 7. 测试(golden)
 
 - [x] 7.1 `test/base-converter.test.ts`:十→二/八/十六、前缀识别、BigInt 大数、非法字符定位
-- [x] 7.2 `test/text-diff.test.ts`:行/词/字符差异、空输入、HTML 转义(无 XSS)
-- [x] 7.3 `test/log-analyzer.test.ts`:级别统计、异常聚类去重、关键词、ids/ips、接口聚合、时间线、>50MB partial(用小样本构造)
+- [x] 7.2 `test/text-diff.test.ts`:逐行(line)、空输入(invalid-input)、逐字符(char)三个 golden 用例;词级(word)与 HTML 转义(无 XSS)为静态核验/待人工(无 golden 用例)
+- [x] 7.3 `test/log-analyzer.test.ts`:级别统计、异常聚类去重、ids/ips、空输入、splitContextLines(上下文)五个 golden 用例;关键词/接口聚合/时间线/>50MB partial 为静态核验/待人工(无 golden 用例)
 - [x] 7.4 边界:空输入、非法格式、超长输入
 - [x] 7.5 `pnpm test` 全量回归保持绿
 

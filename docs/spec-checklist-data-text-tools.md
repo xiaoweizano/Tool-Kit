@@ -61,7 +61,7 @@
 - [x] **定位异常上下文** — ☑ (test/log-analyzer.test.ts「splitContextLines」「returns window around a line」:前后各 3 行原文,+ ☐ 待人工:点击异常 button → onContext(splitContextLines(...)) 弹 ContextPanel 手测)
 
 ### Requirement: 时间线与大文件边界
-- [x] **有时间戳生成时间线** — ☑ 静态核验:transform.ts 第 43-44 行 timeRe 分钟桶聚合 timeline;golden 样本含时间戳,UI 由 StatsPanel「时间线」卡片渲染;无时间戳 → 「无时间戳,已跳过」分支(第 72 行)
+- [x] **有时间戳生成时间线** — ☑ 静态核验:transform.ts 第 43-44 行 timeRe 分钟桶聚合 timeline;golden 样本含时间戳,UI 由 StatsPanel「时间线」卡片渲染
 - [x] **超大文件截断** — ☑ 静态核验:transform.ts 第 21 行 `rawText.length>50MB → partial`,`message`=「文件过大,已截断前50MB分析」(与 spec 文案一致);纯逻辑分支当前无单测覆盖——待人工/后续补测
 
 ### Requirement: 本地离线与分块异步
