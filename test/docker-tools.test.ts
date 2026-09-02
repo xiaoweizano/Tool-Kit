@@ -50,11 +50,31 @@ describe('parseRegistryUrl', () => {
 })
 
 describe('generateDockerfile', () => {
-  it('produces multi-stage dockerfile', () => {
+  it('emits a multi-stage dockerfile when buildBase provided', () => {
+    const r = generateDockerfile({
+      base: 'nginx:alpine',
+      workdir: '/app',
+      buildBase: 'node:18-alpine',
+      buildRun: ['npm ci', 'npm run build'],
+      buildCopy: [{ src: 'package.json', dest: 'package.json' }],
+      copyFromBuild: [{ src: '/app/dist', dest: '/usr/share/nginx/html' }],
+      expose: '80',
+      entrypoint: 'nginx -g "daemon off;"',
+    })
+    if (r.status !== 'ok') throw new Error('err')
+    expect(r.data).toContain('FROM node:18-alpine AS build')
+    expect(r.data).toContain('FROM nginx:alpine')
+    expect(r.data).toContain('COPY --from=build')
+    expect(r.data).toContain('RUN npm ci')
+    expect(r.data).toContain('EXPOSE 80')
+    expect(r.data).toContain('CMD')
+  })
+  it('single-stage stays single-stage when no buildBase', () => {
     const r = generateDockerfile({ base: 'node:18-alpine', workdir: '/app', expose: '3000', entrypoint: 'npm start' })
     if (r.status !== 'ok') throw new Error('err')
     expect(r.data).toContain('FROM node:18-alpine')
-    expect(r.data).toContain('EXPOSE 3000')
+    expect(r.data).not.toContain('AS build')
+    expect(r.data.match(/FROM/g)).toHaveLength(1)
   })
   it('missing base invalid', () => {
     const r = generateDockerfile({ base: '' })

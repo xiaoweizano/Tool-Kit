@@ -15,7 +15,7 @@
 - [x] **生成单服务 compose** — ☑ (test/docker-tools.test.ts「produces compose with one service」:name=web,image,port → 断言输出含 `services:` 与 `web:`;port/volume/env/depends_on 由 transform.ts 静态核验拼接 YAML)
 
 ### Requirement: Dockerfile 生成
-- [x] **生成带多阶段构建的 Dockerfile** — ☑ (test/docker-tools.test.ts「produces multi-stage dockerfile」:base=node:18-alpine、expose=3000 → 断言 `FROM node:18-alpine` + `EXPOSE 3000`;`CMD{entrypoint}`、WORKDIR/COPY/RUN 由 transform.ts:35-40 静态核验。注:测试命名为 multi-stage,但 transform 当前输出单 FROM(未拆分多个 build stage),仅断言 FROM/EXPOSE)
+- [x] **生成带多阶段构建的 Dockerfile** — ☑ (test/docker-tools.test.ts「emits a multi-stage dockerfile when buildBase provided」:base=nginx:alpine、buildBase=node:18-alpine、buildRun=["npm ci","npm run build"]、buildCopy=[package.json]、copyFromBuild=[/app/dist→/usr/share/nginx/html]、expose=80、entrypoint=nginx → 断言 `FROM node:18-alpine AS build`、`FROM nginx:alpine`、`COPY --from=build`、`RUN npm ci`、`EXPOSE 80`、`CMD`;单阶段「single-stage stays single-stage when no buildBase」断言无 `AS build` 且仅 1 个 `FROM`。WORKDIR/COPY/RUN 拼装由 transform.ts:35-62 静态核验)
 
 ### Requirement: Docker 命令速查
 - [x] **搜索 docker 命令** — ☐ 待人工:CheatSheetTab.tsx 输入 q → 按 name/desc 过滤 `DOCKER_COMMANDS`;golden 测试仅数据守门(见下),未覆盖「搜索 build → 命中 docker build 卡片」这一交互行为本身

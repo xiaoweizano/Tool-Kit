@@ -32,12 +32,29 @@ export function generateCompose(services: ComposeService[]): ToolResult<string> 
 
 export function generateDockerfile(o: DockerfileOptions): ToolResult<string> {
   if (!o.base.trim()) return { status: 'error', kind: 'invalid-input', message: '请填写基础镜像' }
-  const lines = [`FROM ${o.base}`]
-  if (o.workdir) lines.push(`WORKDIR ${o.workdir}`)
-  o.copy?.forEach((c) => lines.push(`COPY ${c.src} ${c.dest}`))
-  o.run?.forEach((r) => lines.push(`RUN ${r}`))
-  if (o.expose) lines.push(`EXPOSE ${o.expose}`)
-  if (o.entrypoint) lines.push(`CMD ${o.entrypoint}`)
+  const lines: string[] = []
+  const workdir = o.workdir || '/app'
+  if (o.buildBase) {
+    lines.push(`FROM ${o.buildBase} AS build`)
+    lines.push(`WORKDIR ${workdir}`)
+    o.buildCopy?.forEach((c) => lines.push(`COPY ${c.src} ${c.dest}`))
+    o.buildRun?.forEach((r) => lines.push(`RUN ${r}`))
+    lines.push('')
+    lines.push(`FROM ${o.base}`)
+    lines.push(`WORKDIR ${workdir}`)
+    o.copyFromBuild?.forEach((c) => lines.push(`COPY --from=build ${c.src} ${c.dest}`))
+    o.copy?.forEach((c) => lines.push(`COPY ${c.src} ${c.dest}`))
+    o.run?.forEach((r) => lines.push(`RUN ${r}`))
+    if (o.expose) lines.push(`EXPOSE ${o.expose}`)
+    if (o.entrypoint) lines.push(`CMD ${o.entrypoint}`)
+  } else {
+    lines.push(`FROM ${o.base}`)
+    if (o.workdir) lines.push(`WORKDIR ${o.workdir}`)
+    o.copy?.forEach((c) => lines.push(`COPY ${c.src} ${c.dest}`))
+    o.run?.forEach((r) => lines.push(`RUN ${r}`))
+    if (o.expose) lines.push(`EXPOSE ${o.expose}`)
+    if (o.entrypoint) lines.push(`CMD ${o.entrypoint}`)
+  }
   return { status: 'ok', data: lines.join('\n') }
 }
 

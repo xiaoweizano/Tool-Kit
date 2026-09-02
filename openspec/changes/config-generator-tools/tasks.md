@@ -10,7 +10,7 @@
 
 - [x] 2.1 `generateRun(options): ToolResult<string>`:docker run 命令,缺 image→invalid-input
 - [x] 2.2 `generateCompose(services): ToolResult<string>`:docker-compose.yml,无服务→invalid-input
-- [x] 2.3 `generateDockerfile(options): ToolResult<string>`:单阶段 Dockerfile,缺 base→invalid-input(multi-stage 为 v2 最佳实践项,当前未实现)
+- [x] 2.3 `generateDockerfile(options): ToolResult<string>`:多阶段 Dockerfile(buildBase 时),缺 base→invalid-input
 - [x] 2.4 `parseImageName(image)` / `parseRegistryUrl(url)`:拆分 registry/namespace/repo/tag,scheme/host/port/path;非法→invalid-input
 - [x] 2.5 `data/commands.ts`:**Docker 命令速查 ≥50 条**(10 类 × 5 条,含 flag/说明/示例),结构守门(总数/唯一/字段非空)
 
