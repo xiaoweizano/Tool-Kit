@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { diffText } from '@tools/text-diff/transform'
+import { diffText, textStats, applyCase, segmentText } from '@tools/text-diff/transform'
+import type { CaseMode } from '@tools/text-diff/types'
 
 describe('diffText', () => {
   it('line mode highlights changed line', () => {
@@ -33,6 +34,72 @@ describe('diffText', () => {
       // raw tags never pass through; `<`/`>` are escaped to &lt;/&gt;
       expect(r.data).not.toContain('<b>')
       expect(r.data).toContain('&lt;b&gt;')
+    }
+  })
+})
+
+describe('textStats', () => {
+  it('reports counts for a mixed string', () => {
+    const r = textStats('Hello World 123!')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.chars).toBe(16)
+      expect(r.data.letters).toBe(10)
+      expect(r.data.digits).toBe(3)
+      expect(r.data.symbols).toBe(1)
+      expect(r.data.whitespace).toBe(2)
+      expect(r.data.words).toBe(3)
+      expect(r.data.lines).toBe(1)
+      expect(r.data.uniqueChars).toBe(12)
+      expect(r.data.topChars[0]).toBeDefined()
+      expect(r.data.topChars[0].count).toBeGreaterThanOrEqual(r.data.topChars[1]?.count ?? 0)
+    }
+  })
+})
+
+describe('applyCase', () => {
+  const cases: [string, CaseMode, string][] = [
+    ['hello world', 'upper', 'HELLO WORLD'],
+    ['hello world', 'title', 'Hello World'],
+    ['foo bar', 'camel', 'fooBar'],
+    ['foo bar', 'pascal', 'FooBar'],
+    ['foo bar', 'snake', 'foo_bar'],
+    ['foo bar', 'kebab', 'foo-bar'],
+    ['foo bar', 'constant', 'FOO_BAR'],
+    ['ab', 'alternating', 'Ab'],
+    ['FOO', 'sentence', 'Foo'],
+  ]
+  it.each(cases)('applyCase(%s, %s) -> %s', (input, mode, expected) => {
+    const r = applyCase(input, mode as CaseMode)
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(r.data).toBe(expected)
+  })
+})
+
+describe('segmentText', () => {
+  it('splits by type', () => {
+    const r = segmentText('abc123!@def 456')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toEqual([
+        { type: 'letters', text: 'abc' },
+        { type: 'digits', text: '123' },
+        { type: 'symbols', text: '!@' },
+        { type: 'letters', text: 'def' },
+        { type: 'whitespace', text: ' ' },
+        { type: 'digits', text: '456' },
+      ])
+    }
+  })
+  it('customDelims splits a symbol into its own boundary', () => {
+    const r = segmentText('a@b', { customDelims: '@' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toEqual([
+        { type: 'letters', text: 'a' },
+        { type: 'symbols', text: '@' },
+        { type: 'letters', text: 'b' },
+      ])
     }
   })
 })
