@@ -4,6 +4,13 @@ import type { DiffMode, TextStats, CaseMode, SegmentType, Segment, SegmentOpts, 
 
 const esc = (s: string): string => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 
+const splitLines = (v: string): string[] => {
+  if (v === '') return ['']
+  const parts = v.split('\n')
+  if (parts[parts.length - 1] === '') parts.pop()
+  return parts
+}
+
 export function diffText(textA: string, textB: string, mode: DiffMode): ToolResult<string> {
   if (!textA || !textB) return { status: 'error', kind: 'invalid-input', message: '请粘贴两段文本' }
   const changes = mode === 'word' ? diffWords(textA, textB) : mode === 'char' ? diffChars(textA, textB) : diffLines(textA, textB)
@@ -45,12 +52,12 @@ export function diffSideBySide(textA: string, textB: string, mode: DiffMode): To
   while (i < changes.length) {
     const c = changes[i]
     if (!c.added && !c.removed) {
-      for (const line of c.value.split('\n')) push({ text: line, kind: 'same' }, { text: line, kind: 'same' })
+      for (const line of splitLines(c.value)) push({ text: line, kind: 'same' }, { text: line, kind: 'same' })
       i++
     } else if (c.removed) {
-      const removedLines = c.value.split('\n')
+      const removedLines = splitLines(c.value)
       let addedLines: string[] = []
-      if (i + 1 < changes.length && changes[i + 1].added) { addedLines = changes[i + 1].value.split('\n'); i += 2 } else { i++ }
+      if (i + 1 < changes.length && changes[i + 1].added) { addedLines = splitLines(changes[i + 1].value); i += 2 } else { i++ }
       const n = Math.max(removedLines.length, addedLines.length)
       for (let r = 0; r < n; r++) {
         push(
@@ -59,7 +66,7 @@ export function diffSideBySide(textA: string, textB: string, mode: DiffMode): To
         )
       }
     } else {
-      for (const line of c.value.split('\n')) push({ text: '', kind: 'blank' }, { text: line, kind: 'added' })
+      for (const line of splitLines(c.value)) push({ text: '', kind: 'blank' }, { text: line, kind: 'added' })
       i++
     }
   }

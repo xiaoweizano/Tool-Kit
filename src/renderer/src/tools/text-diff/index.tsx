@@ -163,8 +163,14 @@ export default function TextDiffPage(): JSX.Element {
               <button className={`btn btn-sm ${diffView === 'merged' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setDiffView('merged')}>合并</button>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <textarea value={textA} onChange={(e) => setTextA(e.target.value)} placeholder="原文本 A" className="textarea textarea-bordered w-full font-mono" rows={8} />
-              <textarea value={textB} onChange={(e) => setTextB(e.target.value)} placeholder="对比文本 B" className="textarea textarea-bordered w-full font-mono" rows={8} />
+              <div>
+                <div className="mb-1 font-mono text-[11px] tracking-[0.25em] text-neutral">原文本 A</div>
+                <textarea value={textA} onChange={(e) => setTextA(e.target.value)} placeholder="原文本 A" className="textarea textarea-bordered w-full font-mono" rows={8} />
+              </div>
+              <div>
+                <div className="mb-1 font-mono text-[11px] tracking-[0.25em] text-neutral">对比文本 B</div>
+                <textarea value={textB} onChange={(e) => setTextB(e.target.value)} placeholder="对比文本 B" className="textarea textarea-bordered w-full font-mono" rows={8} />
+              </div>
             </div>
             <div className="mt-4">
               {diffView === 'side' ? (

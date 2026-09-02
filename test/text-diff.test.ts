@@ -104,6 +104,14 @@ describe('diffSideBySide', () => {
     expect(r.status).toBe('error')
     if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
+  it('side-by-side has no phantom blank rows', () => {
+    const r = diffSideBySide('1111\naaa\nbbb\nabc', '11111\naaa\nbbb\nav', 'line')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.length).toBe(4)
+      expect(r.data.some((row) => row.left.kind === 'blank' || row.right.kind === 'blank')).toBe(false)
+    }
+  })
 })
 
 describe('applyCase', () => {
