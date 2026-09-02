@@ -10,7 +10,7 @@
 
 - [x] 2.1 `generateRun(options): ToolResult<string>`:docker run 命令,缺 image→invalid-input
 - [x] 2.2 `generateCompose(services): ToolResult<string>`:docker-compose.yml,无服务→invalid-input
-- [x] 2.3 `generateDockerfile(options): ToolResult<string>`:multi-stage Dockerfile,缺 base→invalid-input
+- [x] 2.3 `generateDockerfile(options): ToolResult<string>`:单阶段 Dockerfile,缺 base→invalid-input(multi-stage 为 v2 最佳实践项,当前未实现)
 - [x] 2.4 `parseImageName(image)` / `parseRegistryUrl(url)`:拆分 registry/namespace/repo/tag,scheme/host/port/path;非法→invalid-input
 - [x] 2.5 `data/commands.ts`:**Docker 命令速查 ≥50 条**(10 类 × 5 条,含 flag/说明/示例),结构守门(总数/唯一/字段非空)
 
@@ -36,8 +36,8 @@
 ## 7. 测试(golden)
 
 - [x] 7.1 `test/docker-tools.test.ts`:run/compose/dockerfile 生成、镜像名/注册表解析、非法输入;命令速查数据结构守门(≥50 条/唯一/字段非空)
-- [x] 7.2 `test/nginx-generator.test.ts`:server/反代+WebSocket/SSL/缓存/gzip/安全头/upstream;缺 server_name 与空 upstream→invalid-input
-- [x] 7.3 `test/jvm-params.test.ts`:堆内存/GC 三策略/调试/监控/容器感知/自定义合并;无选项→EMPTY
+- [x] 7.2 `test/nginx-generator.test.ts`:basic server block、反代+WebSocket 头、缺 server_name→invalid-input、空 upstream→invalid-input;SSL/缓存/gzip/安全头/upstream 非空生成:静态核验/待人工(无单测)
+- [x] 7.3 `test/jvm-params.test.ts`:空选项→status=ok(EMPTY 引导态)、gc=g1→-XX:+UseG1GC、container→UseContainerSupport;ZGC/Shenandoah/调试/监控/自定义合并/堆内存输出:静态核验/待人工(无单测)
 - [x] 7.4 边界:空输入、非法格式
 - [x] 7.5 `pnpm test` 全量回归保持绿
 
