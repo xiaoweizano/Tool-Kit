@@ -49,8 +49,7 @@ export function applyCase(text: string, mode: CaseMode): ToolResult<string> {
   return { status: 'ok', data: result }
 }
 
-const typeOf = (c: string, delims: Set<string>): SegmentType => {
-  if (delims.has(c)) return 'symbols'
+const typeOf = (c: string): SegmentType => {
   if (/[A-Za-z]/.test(c)) return 'letters'
   if (/[0-9]/.test(c)) return 'digits'
   if (/\s/.test(c)) return 'whitespace'
@@ -61,10 +60,10 @@ export function segmentText(text: string, opts?: SegmentOpts): ToolResult<Segmen
   const delims = new Set(opts?.customDelims ?? '')
   const tokens: Segment[] = []
   for (const c of text) {
-    const t = typeOf(c, delims)
+    if (delims.has(c)) { tokens.push({ type: 'symbols', text: c }); continue }  // hard boundary, own token
+    const t = typeOf(c)
     const last = tokens[tokens.length - 1]
-    if (last && last.type === t && t !== 'symbols') last.text += c
-    else if (last && last.type === t && t === 'symbols') last.text += c
+    if (last && last.type === t) last.text += c
     else tokens.push({ type: t, text: c })
   }
   return { status: 'ok', data: tokens }

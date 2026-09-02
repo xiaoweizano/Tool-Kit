@@ -91,7 +91,7 @@ describe('segmentText', () => {
       ])
     }
   })
-  it('customDelims splits a symbol into its own boundary', () => {
+  it('custom delimiter splits across letters', () => {
     const r = segmentText('a@b', { customDelims: '@' })
     expect(r.status).toBe('ok')
     if (r.status === 'ok') {
@@ -99,6 +99,16 @@ describe('segmentText', () => {
         { type: 'letters', text: 'a' },
         { type: 'symbols', text: '@' },
         { type: 'letters', text: 'b' },
+      ])
+    }
+  })
+  it('custom delimiter splits a symbol run', () => {
+    const r = segmentText('!@', { customDelims: '@' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toEqual([
+        { type: 'symbols', text: '!' },
+        { type: 'symbols', text: '@' },
       ])
     }
   })
