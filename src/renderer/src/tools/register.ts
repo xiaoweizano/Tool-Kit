@@ -19,6 +19,9 @@ import { PasswordGenIcon } from '@tools/password-generator/icon'
 import { BaseConvIcon } from '@tools/base-converter/icon'
 import { TextDiffIcon } from '@tools/text-diff/icon'
 import { LogAnalyzerIcon } from '@tools/log-analyzer/icon'
+import { DockerIcon } from '@tools/docker-tools/icon'
+import { NginxIcon } from '@tools/nginx-generator/icon'
+import { JvmIcon } from '@tools/jvm-params/icon'
 
 // lazy 放在 register.ts 而非页面 index.tsx,避免页面自引用自身模块的循环导入
 const JsonParserPage = lazy(() => import('@tools/json-parser'))
@@ -40,6 +43,9 @@ const PasswordGeneratorPageLazy = lazy(() => import('@tools/password-generator')
 const BaseConverterPageLazy = lazy(() => import('@tools/base-converter'))
 const TextDiffPageLazy = lazy(() => import('@tools/text-diff'))
 const LogAnalyzerPageLazy = lazy(() => import('@tools/log-analyzer'))
+const DockerToolsPageLazy = lazy(() => import('@tools/docker-tools'))
+const NginxGeneratorPageLazy = lazy(() => import('@tools/nginx-generator'))
+const JvmParamsPageLazy = lazy(() => import('@tools/jvm-params'))
 
 // 加一个工具 = 在此数组追加一行(实现接口 + 目录),导航/路由自动生效
 export const tools: ToolDescriptor[] = [
@@ -136,6 +142,21 @@ export const tools: ToolDescriptor[] = [
   {
     id: 'log-analyzer', name: '日志分析', icon: LogAnalyzerIcon,
     route: '/tools/log-analyzer', component: LogAnalyzerPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'docker-tools', name: 'Docker 生成', icon: DockerIcon,
+    route: '/tools/docker-tools', component: DockerToolsPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'nginx-generator', name: 'nginx 配置', icon: NginxIcon,
+    route: '/tools/nginx-generator', component: NginxGeneratorPageLazy,
+    capability: { offline: true }
+  },
+  {
+    id: 'jvm-params', name: 'JVM 参数', icon: JvmIcon,
+    route: '/tools/jvm-params', component: JvmParamsPageLazy,
     capability: { offline: true }
   }
 ]
