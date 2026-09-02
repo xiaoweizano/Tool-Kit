@@ -50,10 +50,18 @@ export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
     const ex = line.match(exceptRe)
     if (ex) {
       const type = ex[1], msg = ex[2] ?? ''
-      const key = `${type}|${msg.split(' ').slice(0, 3).join(' ')}`.slice(0, 80)
-      const cur = excByHash.get(key) ?? { type, message: msg, count: 0, sampleLine: idx, stackHash: hash(key) }
+      // Cluster by exception type only, so all occurrences of the SAME exception
+      // (header line + its stack-continuation lines) merge into ONE cluster.
+      const key = type
+      const desc = exceptionLineMessage(line, msg)
+      let cur = excByHash.get(key)
+      if (!cur) {
+        cur = { type, message: desc, count: 0, sampleLine: idx, stackHash: hash(key) }
+        excByHash.set(key, cur)
+      } else if (desc && cur.message === '') {
+        cur.message = desc
+      }
       cur.count += 1
-      excByHash.set(key, cur)
     }
     // endpoint
     const pe = line.match(pathRe)
@@ -91,6 +99,15 @@ export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
       traceIds: toIdHits(traceLines), requestIds: toIdHits(reqLines), ips: toIdHits(ipLines), endpoints
     }
   }
+}
+
+// Extract a short human-readable descriptor for an exception occurrence.
+// Prefer the offending frame (e.g. `OrderService.getOrder`); fall back to the
+// message after the exception type (`: ...`), or the empty string.
+function exceptionLineMessage(line: string, msg: string): string {
+  const frame = line.match(/\bat ([\w.]+(?:\.[A-Za-z_$][\w$]*)+(?:\([^)]*\))?)/)
+  if (frame) return frame[1]
+  return msg.trim()
 }
 
 function hash(s: string): string {

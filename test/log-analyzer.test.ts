@@ -22,7 +22,12 @@ describe('analyzeLog', () => {
   })
   it('exception clustering dedupes', () => {
     const r = analyzeLog(LOG)
-    if (r.status === 'ok') { expect(r.data.exceptions.some((e) => e.type.includes('NullPointerException'))).toBe(true) }
+    if (r.status === 'ok') {
+      const npes = r.data.exceptions.filter((e) => e.type.includes('NullPointerException'))
+      expect(npes.length).toBe(1)
+      expect(npes[0].count).toBe(2)
+      expect(npes[0].message).toBe('OrderService.getOrder')
+    }
   })
   it('empty input invalid', () => {
     const r = analyzeLog('')
