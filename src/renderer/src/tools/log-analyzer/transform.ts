@@ -7,7 +7,12 @@ const traceRe = /(?:trace[Ii]d|traceId|trace_id|tid)\s*[=:]\s*([\w-]+)/
 const reqRe = /(?:requestId|request_id|reqId|reqid|rid)\s*[=:]\s*([\w-]+)/
 const ipRe = /\b(\d{1,3}(?:\.\d{1,3}){3})\b/
 const exceptRe = /([A-Za-z_][\w$]*(?:Exception|Error|Throwable))(?::\s*(.*))?/
-const pathRe = /(?:GET|POST|PUT|DELETE|PATCH)\s+(\/[A-Za-z0-9_\-./{}]*)/i
+const causedByRe = /Caused by[: ]+([A-Za-z_][\w$]*(?:Exception|Error|Throwable))(?::\s*(.*))?/
+const frameRe = /^\s*at\s+([\w.$]+)\(([^)]+)\)/
+const verbPathRe = /\b(?:GET|POST|PUT|DELETE|PATCH)\s+(\/[^\s"']*)/i
+const pathTokenRe = /(\/(?:api|v\d+|rest|admin|user|users|order|orders|health|status)\b[^\s"'<>]*)/
+
+const firstWords = (line: string, n: number): string => line.trim().replace(/\s+/g, ' ').slice(0, n)
 
 export function splitContextLines(rawText: string, lineIndex: number, n = 3): string[] {
   const lines = rawText.split(/\r?\n/)
@@ -32,13 +37,14 @@ export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
 
   const levelCount: Record<string, number> = {}
   const levelLines: Record<string, number[]> = {}
-  const timeline = new Map<string, number>()
+  const timeline = new Map<string, { count: number; error: number }>()
   const traceLines = new Map<string, number[]>()
   const reqLines = new Map<string, number[]>()
   const ipLines = new Map<string, number[]>()
   const excByHash = new Map<string, ExceptionCluster>()
   const pathErrors = new Map<string, Map<string, number>>()
   const kwCount = new Map<string, number>()
+  let lastExceptionKey: string | undefined
 
   lines.forEach((entry, idx) => {
     const line = entry.text
@@ -49,38 +55,46 @@ export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
     for (const lv of LVLS) {
       if (new RegExp(`\\b${lv}\\b`).test(upper)) { level = lv; break }
     }
+    const isError = level === 'ERROR' || level === 'FATAL'
     levelCount[level] = (levelCount[level] ?? 0) + 1
     ;(levelLines[level] ??= []).push(idx)
     // timeline (minute bucket)
     const tm = line.match(timeRe)
-    if (tm) { const min = tm[1].slice(0, 16); timeline.set(min, (timeline.get(min) ?? 0) + 1) }
+    if (tm) {
+      const min = tm[1].slice(0, 16)
+      const cur = timeline.get(min) ?? { count: 0, error: 0 }
+      cur.count += 1
+      if (isError) cur.error += 1
+      timeline.set(min, cur)
+    }
     // ids
     const tr = line.match(traceRe); if (tr) { const arr = traceLines.get(tr[1]) ?? []; arr.push(idx); traceLines.set(tr[1], arr) }
     const rq = line.match(reqRe); if (rq) { const arr = reqLines.get(rq[1]) ?? []; arr.push(idx); reqLines.set(rq[1], arr) }
     const ip = line.match(ipRe); if (ip) { const arr = ipLines.get(ip[1]) ?? []; arr.push(idx); ipLines.set(ip[1], arr) }
     // exception
+    const caused = line.match(causedByRe)
     const ex = line.match(exceptRe)
-    if (ex) {
-      const type = ex[1], msg = ex[2] ?? ''
-      // Cluster by exception type only, so all occurrences of the SAME exception
-      // (header line + its stack-continuation lines) merge into ONE cluster.
-      const key = type
-      const desc = exceptionLineMessage(line, msg)
-      let cur = excByHash.get(key)
-      if (!cur) {
-        cur = { type, message: desc, count: 0, sampleLine: lineNo, stackHash: hash(key) }
-        excByHash.set(key, cur)
-      } else if (desc && cur.message === '') {
-        cur.message = desc
-      }
+    let exKey: string | undefined, exDesc = ''
+    if (ex) { exKey = ex[1]; exDesc = exceptionLineMessage(line, ex[2] ?? '') }
+    else if (caused) { exKey = caused[1]; exDesc = caused[2] ?? '' }
+    else if (frameRe.test(line) && lastExceptionKey) { exKey = lastExceptionKey; exDesc = '' }  // stack continuation
+    else if (isError) { exKey = 'ERROR'; exDesc = firstWords(line, 40) }  // fallback for error lines w/o named exception
+    if (exKey) {
+      const desc = exDesc
+      let cur = excByHash.get(exKey)
+      if (!cur) { cur = { type: exKey, message: desc, count: 0, sampleLine: lineNo, stackHash: hash(exKey) }; excByHash.set(exKey, cur) }
+      else if (desc && cur.message === '') cur.message = desc
       cur.count += 1
+      lastExceptionKey = exKey
     }
     // endpoint
-    const pe = line.match(pathRe)
-    if (pe && (level === 'ERROR' || level === 'FATAL')) {
-      const path = pe[1]
+    const peVerb = line.match(verbPathRe)
+    const peToken = line.match(pathTokenRe)
+    const pe = peVerb ?? peToken
+    if (pe && isError) {
+      const path = normalizePath((pe[1] ?? pe[0]))
       const m = pathErrors.get(path) ?? new Map<string, number>()
-      const exType = ex ? ex[1] : 'ERROR'
+      const exType = exKey ?? 'ERROR'
       m.set(exType, (m.get(exType) ?? 0) + 1)
       pathErrors.set(path, m)
     }
@@ -93,7 +107,7 @@ export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
 
   const total = lines.length
   const levelStats: LevelStat[] = LVLS.filter((l) => levelCount[l])
-    .map((l) => ({ level: l, count: levelCount[l], pct: Math.round((levelCount[l] / total) * 100) }))
+    .map((l) => ({ level: l, count: levelCount[l], pct: Math.round((levelCount[l] / total) * 100), isHigh: (l === 'ERROR' || l === 'FATAL') && (levelCount[l] / total) > 0.30 }))
   const toIdHits = (m: Map<string, number[]>): IdHit[] => [...m.entries()]
     .map(([id, arr]) => ({ id, lineCount: arr.length })).sort((a, b) => b.lineCount - a.lineCount)
   const exceptions = [...excByHash.values()].sort((a, b) => b.count - a.count)
@@ -102,7 +116,7 @@ export function analyzeLog(rawText: string): ToolResult<LogAnalysisResult> {
   const endpoints: EndpointAgg[] = [...pathErrors.entries()]
     .map(([path, m]) => ({ path, errors: [...m.entries()].map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count) }))
   const timelineArr: TimelinePoint[] = [...timeline.entries()]
-    .map(([ts, count]) => ({ ts, count })).sort((a, b) => a.ts.localeCompare(b.ts))
+    .map(([ts, v]) => ({ ts, count: v.count, error: v.error })).sort((a, b) => a.ts.localeCompare(b.ts))
 
   return {
     status: 'ok',
@@ -126,4 +140,8 @@ function hash(s: string): string {
   let h = 0
   for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0 }
   return h.toString(36)
+}
+
+function normalizePath(p: string): string {
+  return p.replace(/\/\d{1,5}(?=\/|$)/g, '/{id}')
 }

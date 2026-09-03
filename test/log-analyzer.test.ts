@@ -91,3 +91,37 @@ describe('splitContextLines', () => {
     expect(ctx).toContain(lines[3])
   })
 })
+
+describe('robust detection + error coloring', () => {
+  // NOTE: endpoints aggregate ERROR/FATAL lines only. Line 1 (verb path) and the
+  // bare-path ERROR line both carry numeric time and must yield error count = 2.
+  const LOG = [
+    '[2026-09-03 10:00:01] ERROR - GET /api/order/123 boom\n\tCaused by: java.sql.SQLException\n\tat com.x.Dao.query(Dao.java:10)',
+    '[2026-09-03 10:00:02] ERROR - /api/health down',
+  ].join('\n')
+  it('clusters Caused by exception even without Exception keyword on same line', () => {
+    const r = analyzeLog(LOG)
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      const types = r.data.exceptions.map((e) => e.type)
+      expect(types.some((t) => t.includes('SQLException'))).toBe(true)
+    }
+  })
+  it('aggregates endpoint path without HTTP verb (path token only)', () => {
+    const r = analyzeLog(LOG)
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      const paths = r.data.endpoints.map((e) => e.path)
+      expect(paths.some((p) => p === '/api/order/{id}' || p === '/api/order/123')).toBe(true)
+      expect(paths.some((p) => p === '/api/health')).toBe(true)
+    }
+  })
+  it('timeline buckets carry an error count', () => {
+    const r = analyzeLog(LOG)
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.timeline.every((t) => typeof t.error === 'number'))
+      expect(r.data.timeline.reduce((s, t) => s + (t.error ?? 0), 0)).toBe(2)
+    }
+  })
+})

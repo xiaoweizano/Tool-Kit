@@ -1,5 +1,5 @@
-export interface LevelStat { level: string; count: number; pct: number }
-export interface TimelinePoint { ts: string; count: number }
+export interface LevelStat { level: string; count: number; pct: number; isHigh?: boolean }
+export interface TimelinePoint { ts: string; count: number; error?: number }
 export interface ExceptionCluster { type: string; message: string; count: number; sampleLine: number; stackHash: string }
 export interface Keyword { word: string; count: number }
 export interface IdHit { id: string; lineCount: number }
