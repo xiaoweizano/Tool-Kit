@@ -63,18 +63,29 @@ export default function LogAnalyzerPage(): JSX.Element {
 
 function StatsPanel({ res, raw, onContext }: { res: LogAnalysisResult; raw: string; onContext: (lines: string[]) => void }): JSX.Element {
   const maxTimeline = Math.max(1, ...res.timeline.map((t) => t.count))
+  const barColor = (error: number | undefined, count: number): string => {
+    if (!error || count === 0) return 'bg-success/60'
+    const ratio = error / count
+    if (ratio >= 0.3) return 'bg-error'
+    if (ratio > 0) return 'bg-warning'
+    return 'bg-success/60'
+  }
   return (
     <div className="space-y-3">
       <div className="card border border-base-300 bg-base-100"><div className="card-body p-3"><div className="card-title text-sm">级别统计</div>
-        <div className="flex flex-wrap gap-2">{res.levelStats.map((l) => <span key={l.level} className={`badge ${l.level === 'ERROR' ? 'badge-error' : l.level === 'WARN' ? 'badge-warning' : 'badge-info'}`}>{l.level}:{l.count}({l.pct}%)</span>)}</div>
+        <div className="flex flex-wrap gap-2">{res.levelStats.map((l) => (
+          <span key={l.level} className={`badge ${l.level === 'ERROR' ? 'badge-error' : l.level === 'WARN' ? 'badge-warning' : 'badge-info'} ${l.isHigh ? ' badge-error' : ''}`}>
+            {l.level}:{l.count} 条({l.pct}%){l.isHigh ? ' 高' : ''}
+          </span>
+        ))}</div>
       </div></div>
       <div className="card border border-base-300 bg-base-100"><div className="card-body p-3"><div className="card-title text-sm">时间线</div>
         {res.timeline.length === 0 ? <p className="text-sm text-neutral">无时间戳,已跳过</p> : (
           <div className="space-y-1">{res.timeline.map((t) => (
             <div key={t.ts} className="flex items-center gap-2 text-sm font-mono">
               <span className="text-neutral">{t.ts}</span>
-              <span className="inline-block h-2 rounded bg-info/60" style={{ width: `${Math.min(100, (t.count / maxTimeline) * 100)}%` }} />
-              <span>{t.count}</span>
+              <span className={`inline-block h-2 rounded ${barColor(t.error, t.count)}`} style={{ width: `${Math.min(100, (t.count / maxTimeline) * 100)}%` }} />
+              <span>{t.count} 条{t.error ? `(错误 ${t.error})` : ''}</span>
             </div>
           ))}</div>
         )}
