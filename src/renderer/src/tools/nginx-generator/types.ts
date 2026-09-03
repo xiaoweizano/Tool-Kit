@@ -11,7 +11,7 @@ export interface LocationBlock {
 export interface ServerBlock {
   serverName: string
   listen: number
-  ssl: boolean
+  ssl?: boolean
   sslCert?: string
   sslKey?: string
   root?: string
