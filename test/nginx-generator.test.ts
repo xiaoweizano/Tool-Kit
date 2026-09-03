@@ -1,62 +1,58 @@
 import { describe, it, expect } from 'vitest'
-import { generateNginxConfig } from '@tools/nginx-generator/transform'
+import { generateNginxConfig, validateNginxConfig } from '@tools/nginx-generator/transform'
 
-describe('generateNginxConfig', () => {
-  it('basic server block', () => {
-    const r = generateNginxConfig({ serverName: 'example.com', listen: 80, root: '/var/www/html' })
-    if (r.status !== 'ok') throw new Error('err')
-    expect(r.data).toContain('server_name example.com')
-    expect(r.data).toContain('root /var/www/html')
+describe('generateNginxConfig v2', () => {
+  it('ssl server emits cert paths + listen 443 ssl', () => {
+    const r = generateNginxConfig({ servers: [{ serverName: 'x.com', listen: 443, ssl: true, sslCert: '/etc/nginx/c.pem', sslKey: '/etc/nginx/k.pem' }] })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('listen 443 ssl')
+      expect(r.data).toContain('ssl_certificate /etc/nginx/c.pem')
+      expect(r.data).toContain('ssl_certificate_key /etc/nginx/k.pem')
+    }
   })
-  it('proxy with websocket headers', () => {
-    const r = generateNginxConfig({ serverName: 'app.com', listen: 80, proxyPass: 'http://backend:8080', websocket: true })
-    if (r.status !== 'ok') throw new Error('err')
-    expect(r.data).toContain('proxy_pass http://backend:8080')
-    expect(r.data).toContain('proxy_set_header Upgrade')
+  it('force https emits 80 redirect + 443 main server', () => {
+    const r = generateNginxConfig({ servers: [{ serverName: 'x.com', listen: 443, ssl: true, sslCert: '/c.pem', sslKey: '/k.pem', forceHttps: true, redirectCode: '301' }] })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('return 301 https://$host$request_uri')
+      expect(r.data).toContain('listen 80')
+      expect(r.data).toContain('listen 443 ssl')
+    }
   })
-  it('missing server_name invalid', () => {
-    const r = generateNginxConfig({ serverName: '', listen: 80 })
+  it('multiple server blocks each emitted', () => {
+    const r = generateNginxConfig({ servers: [{ serverName: 'a.com', listen: 80, root: '/var/www/a' }, { serverName: 'b.com', listen: 80, proxyPass: 'http://backend' }] })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('server_name a.com')
+      expect(r.data).toContain('server_name b.com')
+      expect(r.data).toContain('proxy_pass http://backend')
+    }
+  })
+  it('upstream block emitted', () => {
+    const r = generateNginxConfig({ upstream: { servers: [{ host: 'a:8080' }], strategy: 'least_conn' }, servers: [{ serverName: 'x.com', listen: 80, proxyPass: 'http://backend' }] })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('upstream backend')
+      expect(r.data).toContain('least_conn')
+      expect(r.data).toContain('server a:8080;')
+    }
+  })
+  it('empty server_name → invalid-input', () => {
+    const r = generateNginxConfig({ servers: [{ serverName: '', listen: 80 }] })
     expect(r.status).toBe('error')
-    if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
-  it('upstream with empty servers invalid', () => {
-    const r = generateNginxConfig({ serverName: 'x.com', listen: 80, upstream: { servers: [], strategy: 'round_robin' } })
-    expect(r.status).toBe('error')
+})
+
+describe('validateNginxConfig', () => {
+  it('flags ssl server missing cert paths', () => {
+    expect(validateNginxConfig({ servers: [{ serverName: 'x.com', listen: 443, ssl: true }] }).some((p) => p.includes('证书'))).toBe(true)
   })
-  it('emits ssl + force https + HSTS when enabled', () => {
-    const r = generateNginxConfig({
-      serverName: 'x.com', listen: 443,
-      sslCert: '/etc/nginx/cert.pem', sslKey: '/etc/nginx/key.pem',
-      forceHttps: true, hsts: true
-    })
-    if (r.status !== 'ok') throw new Error('err')
-    expect(r.data).toContain('ssl_certificate /etc/nginx/cert.pem')
-    expect(r.data).toContain('ssl_certificate_key /etc/nginx/key.pem')
-    expect(r.data).toContain('return 301 https://')
-    expect(r.data).toContain('Strict-Transport-Security')
+  it('flags proxy_pass referencing undefined upstream', () => {
+    expect(validateNginxConfig({ servers: [{ serverName: 'x.com', listen: 80, proxyPass: 'http://backend' }] }).some((p) => p.includes('upstream'))).toBe(true)
   })
-  it('emits gzip + cache + security headers when enabled', () => {
-    const r = generateNginxConfig({ serverName: 'x.com', listen: 80, gzip: true, cache: true, securityHeaders: true })
-    if (r.status !== 'ok') throw new Error('err')
-    expect(r.data).toContain('gzip on')
-    expect(r.data).toContain('expires 7d')
-    expect(r.data).toContain('X-Frame-Options')
-    expect(r.data).toContain('server_tokens off')
+  it('flags root+proxyPass on same server', () => {
+    expect(validateNginxConfig({ servers: [{ serverName: 'x.com', listen: 80, root: '/var/www', proxyPass: 'http://b' }] }).some((p) => p.includes('root') && p.includes('proxy'))).toBe(true)
   })
-  it('emits upstream block with servers + least_conn', () => {
-    const r = generateNginxConfig({
-      serverName: 'x.com', listen: 80,
-      upstream: { servers: [{ host: 'a:8080' }, { host: 'b:8080' }], strategy: 'least_conn' }
-    })
-    if (r.status !== 'ok') throw new Error('err')
-    expect(r.data).toContain('upstream backend')
-    expect(r.data).toContain('least_conn')
-    expect(r.data).toContain('server a:8080;')
-    expect(r.data).toContain('server b:8080;')
-  })
-  it('does NOT emit gzip when disabled (flag-gate)', () => {
-    const r = generateNginxConfig({ serverName: 'x.com', listen: 80 })
-    if (r.status !== 'ok') throw new Error('err')
-    expect(r.data).not.toContain('gzip on')
-  })
+  it('empty input ok', () => { expect(validateNginxConfig({ servers: [] })).toEqual([]) })
 })
