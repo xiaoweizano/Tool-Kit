@@ -13,9 +13,8 @@ import { LinuxIcon } from '@tools/linux-manual/icon'
 import { BatchIcon } from '@tools/batch-transform/icon'
 import { TranslateIcon } from '@tools/translate/icon'
 import { EsQueryIcon } from '@tools/es-query-builder/icon'
-import { PasswordStrengthIcon } from '@tools/password-strength/icon'
+import { PasswordToolsIcon } from '@tools/password-tools/icon'
 import { JwtIcon } from '@tools/jwt-tool/icon'
-import { PasswordGenIcon } from '@tools/password-generator/icon'
 import { BaseConvIcon } from '@tools/base-converter/icon'
 import { TextDiffIcon } from '@tools/text-diff/icon'
 import { LogAnalyzerIcon } from '@tools/log-analyzer/icon'
@@ -37,9 +36,8 @@ const LinuxManualPageLazy = lazy(() => import('@tools/linux-manual'))
 const BatchTransformPageLazy = lazy(() => import('@tools/batch-transform'))
 const TranslatePageLazy = lazy(() => import('@tools/translate'))
 const EsQueryBuilderPageLazy = lazy(() => import('@tools/es-query-builder'))
-const PasswordStrengthPageLazy = lazy(() => import('@tools/password-strength'))
+const PasswordToolsPageLazy = lazy(() => import('@tools/password-tools'))
 const JwtToolPageLazy = lazy(() => import('@tools/jwt-tool'))
-const PasswordGeneratorPageLazy = lazy(() => import('@tools/password-generator'))
 const BaseConverterPageLazy = lazy(() => import('@tools/base-converter'))
 const TextDiffPageLazy = lazy(() => import('@tools/text-diff'))
 const LogAnalyzerPageLazy = lazy(() => import('@tools/log-analyzer'))
@@ -115,18 +113,13 @@ export const tools: ToolDescriptor[] = [
     capability: { offline: true }
   },
   {
-    id: 'password-strength', name: '密码强度', icon: PasswordStrengthIcon,
-    route: '/tools/password-strength', component: PasswordStrengthPageLazy,
+    id: 'password-tools', name: '密码工具', icon: PasswordToolsIcon,
+    route: '/tools/password-tools', component: PasswordToolsPageLazy,
     capability: { offline: true }
   },
   {
     id: 'jwt-tool', name: 'JWT 解析', icon: JwtIcon,
     route: '/tools/jwt-tool', component: JwtToolPageLazy,
-    capability: { offline: true }
-  },
-  {
-    id: 'password-generator', name: '密码生成', icon: PasswordGenIcon,
-    route: '/tools/password-generator', component: PasswordGeneratorPageLazy,
     capability: { offline: true }
   },
   {

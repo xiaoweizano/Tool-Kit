@@ -46,7 +46,7 @@ registry.set('es-query-builder', ((input: unknown, opts?: TransformOpts) => {
   if (action === 'generate') return generateCode(input as string, (opts?.lang as LangId) ?? 'java')
   return buildQueryDsl(input as never)
 }) as Transform<unknown, unknown, TransformOpts>)
-registry.set('password-strength', ((input: string, opts?: TransformOpts) => {
+registry.set('password-tools', ((input: string, opts?: TransformOpts) => {
   const action = opts?.action ?? 'analyze'
   if (action === 'generate') {
     const requireCharsets = typeof opts?.requireCharsets === 'string' ? opts.requireCharsets.split(',') : undefined
