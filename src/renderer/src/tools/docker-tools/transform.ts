@@ -8,6 +8,10 @@ export function generateRun(o: RunOptions): ToolResult<string> {
   if (o.name) parts.push(`--name ${o.name}`)
   if (o.restart) parts.push(`--restart ${o.restart}`)
   if (o.network) parts.push(`--network ${o.network}`)
+  if (o.logging) {
+    parts.push(`--log-driver ${o.logging.driver}`)
+    for (const [k, v] of Object.entries(o.logging.options)) parts.push(`--log-opt ${k}=${v}`)
+  }
   o.ports.forEach((p) => parts.push(`-p ${p}`))
   o.volumes.forEach((v) => parts.push(`-v ${v}`))
   o.envs.forEach((e) => parts.push(`-e ${e}`))
@@ -25,6 +29,16 @@ export function generateCompose(services: ComposeService[]): ToolResult<string> 
     if (s.volumes?.length) b.push('    volumes:', ...s.volumes.map((v) => `      - "${v}"`))
     if (s.envs?.length) b.push('    environment:', ...s.envs.map((e) => `      - ${e}`))
     if (s.dependsOn?.length) b.push('    depends_on:', ...s.dependsOn.map((d) => `      - ${d}`))
+    if (s.restart) b.push(`    restart: ${s.restart}`)
+    if (s.networkMode) b.push(`    network_mode: ${s.networkMode}`)
+    if (s.logging) {
+      b.push('    logging:', `      driver: ${s.logging.driver}`)
+      const opts = Object.entries(s.logging.options)
+      if (opts.length) {
+        b.push('      options:')
+        for (const [k, v] of opts) b.push(`        ${k}: "${v}"`)
+      }
+    }
     lines.push(...b)
   }
   return { status: 'ok', data: lines.join('\n') }

@@ -100,3 +100,23 @@ describe('DOCKER_COMMANDS data guard', () => {
     for (const c of DOCKER_COMMANDS) { expect(c.name.length).toBeGreaterThan(0); expect(c.desc.length).toBeGreaterThan(0) }
   })
 })
+
+describe('docker v2', () => {
+  it('run emits logging driver + opts', () => {
+    const r = generateRun({ image: 'app', ports: [], volumes: [], envs: [], logging: { driver: 'json-file', options: { 'max-size': '10m' } }, network: 'host' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('--network host')
+      expect(r.data).toContain('--log-driver json-file')
+    }
+  })
+  it('compose emits restart + network_mode + logging', () => {
+    const r = generateCompose([{ name: 'web', image: 'nginx', restart: 'always', networkMode: 'host', logging: { driver: 'json-file', options: { 'max-file': '3' } } }])
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('restart: always')
+      expect(r.data).toContain('network_mode: host')
+      expect(r.data).toContain('driver: json-file')
+    }
+  })
+})
