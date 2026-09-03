@@ -27,7 +27,7 @@ export default function NginxGeneratorPage(): JSX.Element {
     upstream: upstreamServers.trim() ? { servers: upstreamServers.split('\n').filter(Boolean).map((host) => ({ host: host.trim() })), strategy: upstreamStrategy } : undefined,
     servers,
   })
-  const setProxyToUpstream = (i: number): void => { if (upstreamServers.trim()) patch(i, { proxyPass: 'http://backend' }) }
+  const setProxyToUpstream = (i: number): void => { if (upstreamServers.trim()) patch(i, { proxyPass: 'http://backend', root: '' }) }
 
   const gen = (): void => { setProblems([]); const r = generateNginxConfig(build()); if (r.status === 'ok') { setOut(r.data); setErrors('') } else { setErrors(r.message); setOut('') } }
   const check = (): void => { setProblems(validateNginxConfig(build())); setOut('') }

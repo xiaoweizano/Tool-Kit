@@ -76,6 +76,9 @@ export async function renewJwt(token: string, secret: string, newExpiry = '1h'):
   const header = decodePart(parts[0])
   const headerAlg = header && typeof header.alg === 'string' ? header.alg : ''
   const SUPPORTED = ['HS256', 'HS384', 'HS512']
-  const alg = (SUPPORTED.includes(headerAlg) ? headerAlg : 'HS256') as JwtAlg
+  if (!SUPPORTED.includes(headerAlg)) {
+    return { status: 'error', kind: 'unsupported', structure: headerAlg, message: '非对称算法续期需私钥,暂不支持' }
+  }
+  const alg = headerAlg as JwtAlg
   return signJwt(JSON.stringify(payload), secret, alg, newExpiry)
 }
