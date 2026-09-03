@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CopyButton } from '@components/CopyButton'
 import { generateRun } from '../transform'
+import { DOCKER_TEMPLATES } from '../data/templates'
 
 export function RunTab(): JSX.Element {
   const [image, setImage] = useState('')
@@ -10,8 +11,22 @@ export function RunTab(): JSX.Element {
   const [envs, setEnvs] = useState('')
   const [restart, setRestart] = useState('')
   const [network, setNetwork] = useState('')
+  const [networkCustom, setNetworkCustom] = useState('')
+  const [loggingDriver, setLoggingDriver] = useState('')
+  const [maxSize, setMaxSize] = useState('')
+  const [tmpl, setTmpl] = useState('')
   const [out, setOut] = useState('')
   const [err, setErr] = useState('')
+
+  const onTemplate = (id: string): void => {
+    if (!id) return
+    const t = DOCKER_TEMPLATES.find((x) => x.id === id)
+    if (!t) return
+    setImage(t.image)
+    setPorts(t.ports.join('\n'))
+    setVolumes(t.volumes.join('\n'))
+    setEnvs(t.envs.join('\n'))
+  }
 
   const gen = (): void => {
     const r = generateRun({
@@ -21,13 +36,20 @@ export function RunTab(): JSX.Element {
       volumes: volumes.split('\n').filter(Boolean),
       envs: envs.split('\n').filter(Boolean),
       restart: restart || undefined,
-      network: network || undefined
+      network: (networkCustom || network) || undefined,
+      logging: loggingDriver ? { driver: loggingDriver, options: maxSize ? { 'max-size': maxSize } : {} } : undefined
     })
     if (r.status === 'ok') { setOut(r.data); setErr('') } else { setErr(r.message); setOut('') }
   }
 
   return (
     <div className="space-y-3">
+      <label className="flex items-center gap-2 text-sm text-neutral">模板
+        <select className="select select-bordered select-sm" value={tmpl} onChange={(e) => { setTmpl(e.target.value); onTemplate(e.target.value) }}>
+          <option value="">手动</option>
+          {DOCKER_TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+        </select>
+      </label>
       <label className="flex items-center gap-2 text-sm text-neutral">镜像
         <input value={image} onChange={(e) => setImage(e.target.value)} placeholder="nginx:alpine" className="input input-bordered input-sm flex-1 font-mono" />
       </label>
@@ -52,8 +74,27 @@ export function RunTab(): JSX.Element {
             <option value="on-failure">on-failure</option>
           </select>
         </label>
-        <label className="flex items-center gap-2 text-sm text-neutral">network(可选)
-          <input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="bridge" className="input input-bordered input-sm w-32 font-mono" />
+        <label className="flex items-center gap-2 text-sm text-neutral">network
+          <select className="select select-bordered select-sm" value={network} onChange={(e) => setNetwork(e.target.value)}>
+            <option value="">自动</option>
+            <option value="bridge">bridge</option>
+            <option value="host">host</option>
+            <option value="none">none</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-neutral">自定义
+          <input value={networkCustom} onChange={(e) => setNetworkCustom(e.target.value)} placeholder="mynet" className="input input-bordered input-sm w-28 font-mono" />
+        </label>
+        <label className="flex items-center gap-2 text-sm text-neutral">log driver
+          <select className="select select-bordered select-sm" value={loggingDriver} onChange={(e) => setLoggingDriver(e.target.value)}>
+            <option value="">无</option>
+            <option value="json-file">json-file</option>
+            <option value="syslog">syslog</option>
+            <option value="journald">journald</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-neutral">max-size
+          <input value={maxSize} onChange={(e) => setMaxSize(e.target.value)} placeholder="10m" className="input input-bordered input-sm w-20 font-mono" />
         </label>
       </div>
       <button className="btn btn-sm btn-primary" onClick={gen}>生成</button>
