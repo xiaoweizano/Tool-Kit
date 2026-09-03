@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { generatePassword, encryptAes, decryptAes, generateRsaKeyPair, encryptRsa, decryptRsa, hashBcrypt, verifyBcrypt } from '@tools/password-generator/transform'
+import { analyzeStrength } from '@tools/password-strength/transform'
 
 describe('generatePassword', () => {
   it('length + charset', () => {
@@ -84,5 +85,30 @@ describe('rsa', () => {
     const e = await encryptRsa('not-a-pem', 'secret')
     expect(e.status).toBe('error')
     if (e.status === 'error') expect(e.kind).toBe('invalid-input')
+  })
+})
+
+describe('generatePassword v2 rules', () => {
+  it('excludeAmbiguous removes 0/O/1/l/I from output', () => {
+    const r = generatePassword({ length: 40, lower: true, upper: true, digit: true, symbol: false, excludeAmbiguous: true })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(/[0O1lI]/.test(r.data as string)).toBe(false)
+  })
+  it('count>1 returns array of unique passwords', () => {
+    const r = generatePassword({ length: 12, lower: true, upper: true, digit: true, symbol: true, count: 5 })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      const arr = r.data as string[]
+      expect(arr.length).toBe(5)
+      expect(new Set(arr).size).toBe(5)
+    }
+  })
+  it('targetLevel strong guarantees level strong', () => {
+    const r = generatePassword({ length: 14, lower: true, upper: true, digit: true, symbol: true, targetLevel: 'strong' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      const a = analyzeStrength(r.data as string)
+      if (a.status === 'ok') expect(a.data.level).toBe('strong')
+    }
   })
 })

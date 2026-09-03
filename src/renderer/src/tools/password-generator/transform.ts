@@ -1,23 +1,51 @@
 import bcrypt from 'bcryptjs'
 import type { ToolResult } from '@core/types'
+import { analyzeStrength } from '@tools/password-strength/transform'
 import type { RandomGenOpts, RsaResult, BcryptResult } from './types'
 
 const b64 = (buf: ArrayBuffer): string => btoa(String.fromCharCode(...new Uint8Array(buf)))
 
-export function generatePassword(opts: RandomGenOpts): ToolResult<string> {
-  if (opts.length < 4 || opts.length > 128) return { status: 'error', kind: 'invalid-input', message: '长度需在 4-128' }
+const AMBIGUOUS = /[0O1lI]/
+function buildPool(o: RandomGenOpts): string {
   let pool = ''
-  if (opts.lower) pool += 'abcdefghijklmnopqrstuvwxyz'
-  if (opts.upper) pool += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-  if (opts.digit) pool += '0123456789'
-  if (opts.symbol) pool += '!@#$%^&*()-_=+[]{};:,.<>?'
-  if (opts.customChars) pool += opts.customChars
-  if (!pool) return { status: 'error', kind: 'invalid-input', message: '请至少选择一种字符集' }
-  const buf = new Uint32Array(opts.length)
+  if (o.lower) pool += 'abcdefghijklmnopqrstuvwxyz'
+  if (o.upper) pool += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  if (o.digit) pool += '0123456789'
+  if (o.symbol) pool += '!@#$%^&*()-_=+[]{};:,.<>?'
+  if (o.customChars) pool += o.customChars
+  if (o.excludeAmbiguous) pool = [...pool].filter((c) => !AMBIGUOUS.test(c)).join('')
+  return pool
+}
+function onePass(o: RandomGenOpts, pool: string): string {
+  const buf = new Uint32Array(o.length)
   crypto.getRandomValues(buf)
   let out = ''
-  for (let i = 0; i < opts.length; i++) out += pool[buf[i] % pool.length]
-  return { status: 'ok', data: out }
+  for (let i = 0; i < o.length; i++) out += pool[buf[i] % pool.length]
+  return out
+}
+export function generatePassword(opts: RandomGenOpts): ToolResult<string> | ToolResult<string[]> {
+  if (opts.length < 4 || opts.length > 128) return { status: 'error', kind: 'invalid-input', message: '长度需在 4-128' }
+  const pool = buildPool(opts)
+  if (!pool) return { status: 'error', kind: 'invalid-input', message: '请至少选择一种字符集' }
+  const count = opts.count ?? 1
+  const meet = (pw: string): boolean => {
+    if (!opts.targetLevel) return true
+    const a = analyzeStrength(pw)
+    return a.status === 'ok' && a.data.level === opts.targetLevel
+  }
+  const gather = (): string[] => {
+    const seen = new Set<string>(); const out: string[] = []
+    let guard = 0
+    while (out.length < count && guard < 200 * count) {
+      guard++
+      const pw = onePass(opts, pool)
+      if (meet(pw) && !seen.has(pw)) { seen.add(pw); out.push(pw) }
+    }
+    return out
+  }
+  const res = gather()
+  if (count === 1) return { status: 'ok', data: res[0] ?? '' }
+  return { status: 'ok', data: res }
 }
 
 const getKey = async (passphrase: string, salt: BufferSource): Promise<CryptoKey> => {
