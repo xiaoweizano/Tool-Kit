@@ -64,7 +64,7 @@ registry.set('jwt-tool', ((input: string, opts?: TransformOpts) => {
   const alg = (typeof opts?.alg === 'string' ? opts.alg : 'HS256') as JwtAlg
   const secret = typeof opts?.secret === 'string' ? opts.secret : ''
   const expiry = typeof opts?.expiry === 'string' ? opts.expiry : '1h'
-  if (action === 'verify') return verifyJwt(input, secret, alg)
+  if (action === 'verify') return verifyJwt(input, secret, alg, alg.startsWith('HS') ? undefined : secret)
   if (action === 'sign') return signJwt(input, secret, alg, expiry)
   if (action === 'renew') return renewJwt(input, secret, expiry)
   return parseJwt(input)
