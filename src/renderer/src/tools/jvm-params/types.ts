@@ -5,5 +5,9 @@ export interface JvmOptions {
   gc?: GcStrategy
   heapDump?: boolean; heapDumpPath?: string; remoteDebugPort?: string
   printGc?: boolean; jmxPort?: string; flightRecorder?: boolean
-  container?: boolean; extra: string[]
+  container?: boolean
+  xss?: string; maxMetaspace?: string; maxDirectMemory?: string
+  server?: boolean; gcLog?: boolean; oomExit?: boolean; compressedOops?: boolean; encoding?: boolean
+  extra: string[]
 }
+export interface JvmPreset { id: string; label: string; options: Partial<JvmOptions> }

@@ -53,3 +53,20 @@ describe('generateJvmParams', () => {
     if (r.status === 'ok') expect(r.data).toContain('-Xmx2g')
   })
 })
+
+describe('jvm v2 flags', () => {
+  it('emits xss / maxMetaspace / maxDirectMemory / server / gcLog / oomExit / compressedOops / encoding', () => {
+    const r = generateJvmParams({ xss: '1m', maxMetaspace: '512m', maxDirectMemory: '256m', server: true, gcLog: true, oomExit: true, compressedOops: true, encoding: true, extra: [] })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain('-Xss1m')
+      expect(r.data).toContain('-XX:MaxMetaspaceSize=512m')
+      expect(r.data).toContain('-XX:MaxDirectMemorySize=256m')
+      expect(r.data).toContain('-server')
+      expect(r.data).toContain('-Xlog:gc*')
+      expect(r.data).toContain('-XX:+ExitOnOutOfMemoryError')
+      expect(r.data).toContain('-XX:+UseCompressedOops')
+      expect(r.data).toContain('-Dfile.encoding=UTF-8')
+    }
+  })
+})
