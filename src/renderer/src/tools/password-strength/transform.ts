@@ -70,7 +70,13 @@ export function analyzeStrength(password: string): ToolResult<StrengthReport> {
   const level: Level = score < 40 ? 'weak' : score <= 70 ? 'medium' : 'strong'
   const suggestions = checks.filter((c) => !c.passed && c.hint).map((c) => c.hint as string)
   if (suggestions.length === 0) suggestions.push('密码强度良好')
-  return { status: 'ok', data: { score, level, length: len, checks, suggestions } }
+  const charsets = {
+    lower: CHARSET.lower.test(password),
+    upper: CHARSET.upper.test(password),
+    digit: CHARSET.digit.test(password),
+    symbol: CHARSET.symbol.test(password),
+  }
+  return { status: 'ok', data: { score, level, length: len, checks, suggestions, charsets } }
 }
 
 export function improvePassword(password: string, opts: GenerateOpts): ToolResult<string> {

@@ -23,6 +23,18 @@ describe('analyzeStrength', () => {
     expect(r.status).toBe('error')
     if (r.status === 'error') expect(r.kind).toBe('invalid-input')
   })
+  it('reports which charsets are present', () => {
+    const r = analyzeStrength('Abc123!')
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.charsets).toEqual({ lower: true, upper: true, digit: true, symbol: true })
+    }
+    const r2 = analyzeStrength('abc')
+    expect(r2.status).toBe('ok')
+    if (r2.status === 'ok') {
+      expect(r2.data.charsets).toEqual({ lower: true, upper: false, digit: false, symbol: false })
+    }
+  })
 })
 
 describe('improvePassword', () => {

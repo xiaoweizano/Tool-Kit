@@ -6,6 +6,7 @@ export interface StrengthReport {
   length: number
   checks: StrengthCheck[]
   suggestions: string[]
+  charsets: { lower: boolean; upper: boolean; digit: boolean; symbol: boolean }
 }
 export interface GenerateOpts {
   targetLevel?: Level          // default 'medium'
