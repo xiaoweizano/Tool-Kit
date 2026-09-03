@@ -95,3 +95,29 @@ describe('renewJwt', () => {
     }
   })
 })
+
+describe('asymmetric + friendly time', () => {
+  it('displays friendly timestamps for exp/iat', () => {
+    const pb = Buffer.from(JSON.stringify({ sub: 'u', exp: 1700000000, iat: 1700000000 })).toString('base64url')
+    const hb = Buffer.from(JSON.stringify({ alg: 'HS256' })).toString('base64url')
+    const r = parseJwt(`${hb}.${pb}.x`)
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data.friendlyTimes).toBeDefined()
+      const fields = (r.data.friendlyTimes as { field: string }[]).map((f) => f.field)
+      expect(fields).toContain('exp')
+      expect(fields).toContain('iat')
+    }
+  })
+  it('verify an RS256 token with a public key PEM', async () => {
+    const { generateKeyPair, exportSPKI, SignJWT } = await import('jose')
+    const { privateKey, publicKey } = await generateKeyPair('RS256')
+    // In this jose version exportSPKI already returns a PEM STRING (not DER bytes),
+    // so we pass it straight through to verifyJwt.
+    const pem = await exportSPKI(publicKey)
+    const tok = await new SignJWT({ sub: 'u' }).setProtectedHeader({ alg: 'RS256' }).sign(privateKey)
+    const v = await verifyJwt(tok, '', 'RS256', pem)
+    expect(v.status).toBe('ok')
+    if (v.status === 'ok') expect(v.data.isValid).toBe(true)
+  })
+})
