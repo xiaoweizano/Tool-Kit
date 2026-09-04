@@ -5,6 +5,8 @@ directories:
 files:
   - out/**
 asar: true
+# Build-only: do NOT auto-publish to GitHub (handled by softprops/action-gh-release in CI)
+publish: null
 # Windows-specific icon (ICO with 16-256px entries)
 win:
   icon: build/icons/icons/icon.ico
