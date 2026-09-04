@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, net, Menu } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, net, Menu, dialog } from 'electron'
 import { join } from 'node:path'
 import { releasesUrl, latestReleaseApi } from './update'
 
@@ -65,6 +65,7 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280, height: 800, minWidth: 1024, minHeight: 640,
     title: 'ToolKit',
+    frame: true,  // 显示原生窗口框架（包含关闭按钮）
     webPreferences: {
       preload: join(__dirname, '../preload/preload.mjs'),
       contextIsolation: true, nodeIntegration: false, sandbox: false
