@@ -27,6 +27,8 @@
 
 **English:** [README.md](README.md)
 
+![ToolKit 截图](assets/screenshot.png)
+
 ## ✨ 特性
 
 - **粘贴即出结果** —— 输入到结果之间不设「转换」按钮,自动识别 + 即时转换(防抖 ≤ 200ms)。

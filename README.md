@@ -27,6 +27,8 @@
 
 **中文版:** [README.zh-CN.md](README.zh-CN.md)
 
+![ToolKit screenshot](assets/screenshot.png)
+
 ## ✨ Highlights
 
 - **Paste-and-go** — no "convert" button between input and result; auto-detect + instant transform (debounced ≤ 200 ms).
