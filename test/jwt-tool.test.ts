@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseJwt, signJwt, verifyJwt, renewJwt } from '@tools/jwt-tool/transform'
+import { parseJwt, signJwt, verifyJwt, renewJwt, timestampToSeconds } from '@tools/jwt-tool/transform'
 import type { JwtAlg } from '@tools/jwt-tool/types'
 
 const SECRET = 'super-secret'
@@ -96,6 +96,23 @@ describe('renewJwt', () => {
   })
 })
 
+describe('timestampToSeconds auto-detects unit', () => {
+  it('keeps seconds untouched', () => {
+    expect(timestampToSeconds(1700000000)).toBe(1700000000)
+  })
+  it('converts milliseconds to seconds (13-digit input)', () => {
+    // 1788490290615 ms = 2026-09-04; previously misread as seconds → year 58645
+    expect(timestampToSeconds(1788490290615)).toBeCloseTo(1788490290.615, 5)
+  })
+  it('converts microseconds to seconds', () => {
+    expect(timestampToSeconds(1788490290615000)).toBeCloseTo(1788490290.615, 5)
+  })
+  it('converts a 12-digit millisecond value past the seconds boundary', () => {
+    // 1e11 s ≈ year 5138; a 12-digit ms value must not be treated as seconds
+    expect(timestampToSeconds(1788490290615 / 10)).toBeLessThan(1e12)
+  })
+})
+
 describe('asymmetric + friendly time', () => {
   it('displays friendly timestamps for exp/iat', () => {
     const pb = Buffer.from(JSON.stringify({ sub: 'u', exp: 1700000000, iat: 1700000000 })).toString('base64url')
@@ -119,5 +136,16 @@ describe('asymmetric + friendly time', () => {
     const v = await verifyJwt(tok, '', 'RS256', pem)
     expect(v.status).toBe('ok')
     if (v.status === 'ok') expect(v.data.isValid).toBe(true)
+  })
+  it('signs with an RS256 private key PEM and verifies', async () => {
+    const { generateKeyPair, exportPKCS8, exportSPKI } = await import('jose')
+    const { privateKey, publicKey } = await generateKeyPair('RS256', { extractable: true })
+    const s = await signJwt(JSON.stringify({ sub: 'u' }), await exportPKCS8(privateKey), 'RS256', '1h')
+    expect(s.status).toBe('ok')
+    if (s.status === 'ok') {
+      const v = await verifyJwt(s.data.token as string, '', 'RS256', await exportSPKI(publicKey))
+      expect(v.status).toBe('ok')
+      if (v.status === 'ok') expect(v.data.isValid).toBe(true)
+    }
   })
 })

@@ -1,5 +1,5 @@
 import type { ToolResult } from '@core/types'
-import { jwtVerify, SignJWT, importSPKI } from 'jose'
+import { jwtVerify, SignJWT, importSPKI, importPKCS8 } from 'jose'
 import type { JwtResult, JwtAlg, JwtFriendlyTime } from './types'
 
 const SUPPORTED_ALGS: JwtAlg[] = ['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512', 'PS256', 'PS384', 'PS512']
@@ -12,6 +12,15 @@ export function friendlyTimestamp(seconds: number): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
 }
 
+// 秒/毫秒/微秒/纳秒按数量级自动识别 → 归一为秒
+export function timestampToSeconds(n: number): number {
+  const a = Math.abs(n)
+  if (a < 1e11) return n        // seconds(有效到 ~5138 年)
+  if (a < 1e14) return n / 1e3  // milliseconds
+  if (a < 1e17) return n / 1e6  // microseconds
+  return n / 1e9                // nanoseconds(近似)
+}
+
 const TIME_FIELDS = ['exp', 'iat', 'nbf']
 function timeEntries(payload: Record<string, unknown>): JwtFriendlyTime[] {
   return TIME_FIELDS
@@ -22,8 +31,9 @@ function timeEntries(payload: Record<string, unknown>): JwtFriendlyTime[] {
 function decodePart(part: string): Record<string, unknown> | null {
   try {
     const pad = part.padEnd(Math.ceil(part.length / 4) * 4, '=')
-    const json = atob(pad.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(json)
+    const bin = atob(pad.replace(/-/g, '+').replace(/_/g, '/'))
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0))
+    return JSON.parse(new TextDecoder().decode(bytes))
   } catch { return null }
 }
 
@@ -43,7 +53,8 @@ export async function signJwt(payloadJson: string, secret: string, alg: JwtAlg =
   let payload: Record<string, unknown>
   try { payload = JSON.parse(payloadJson) } catch { return { status: 'error', kind: 'invalid-input', message: 'payload 不是合法 JSON' } }
   try {
-    const token = await new SignJWT(payload).setProtectedHeader({ alg, typ: 'JWT' }).setIssuedAt().setExpirationTime(expiry).sign(textToKey(secret))
+    const key = alg.startsWith('HS') ? textToKey(secret) : await importPKCS8(secret, alg)
+    const token = await new SignJWT(payload).setProtectedHeader({ alg, typ: 'JWT' }).setIssuedAt().setExpirationTime(expiry).sign(key)
     return { status: 'ok', data: { token } }
   } catch { return { status: 'error', kind: 'unsupported', structure: alg, message: '签名失败,请检查密钥' } }
 }
@@ -74,11 +85,6 @@ export async function renewJwt(token: string, secret: string, newExpiry = '1h'):
   const payload = decodePart(parts[1])
   if (!payload) return { status: 'error', kind: 'invalid-input', message: 'JWT 解码失败' }
   const header = decodePart(parts[0])
-  const headerAlg = header && typeof header.alg === 'string' ? header.alg : ''
-  const SUPPORTED = ['HS256', 'HS384', 'HS512']
-  if (!SUPPORTED.includes(headerAlg)) {
-    return { status: 'error', kind: 'unsupported', structure: headerAlg, message: '非对称算法续期需私钥,暂不支持' }
-  }
-  const alg = headerAlg as JwtAlg
+  const alg = (header && typeof header.alg === 'string' ? header.alg : 'HS256') as JwtAlg
   return signJwt(JSON.stringify(payload), secret, alg, newExpiry)
 }
