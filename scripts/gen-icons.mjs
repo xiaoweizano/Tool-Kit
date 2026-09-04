@@ -20,7 +20,10 @@ for (const s of sizes) {
 
 // --- ICO: container with embedded PNG entries ---
 {
-  const entries = [16, 24, 32, 48, 64, 96, 128, 256, 512].map((s) => pngs[s])
+  // ICO spec: width/height >255 is encoded as 0; electron-builder reads the raw
+  // byte for validation, so we keep the max ICO entry at 256 and rely on the
+  // separate 512x512.png for platforms that need it.
+  const entries = [16, 24, 32, 48, 64, 96, 128, 256].map((s) => pngs[s])
   const header = Buffer.alloc(6)
   header.writeUInt16LE(0, 0) // reserved
   header.writeUInt16LE(1, 2) // type: icon

@@ -21,6 +21,8 @@ jobs:
           echo "ELECTRON_BUILDER_ALLOW_AUTO_UPDATE=1" >> $GITHUB_ENV
           echo "SNAPPY_ARCH_SUFFIX=x64" >> $GITHUB_ENV
       - run: pnpm install --frozen-lockfile
+      - name: Regenerate platform icons from SVG
+        run: pnpm icons
       - run: pnpm build:desktop
       - uses: softprops/action-gh-release@v2
         with: { draft: true, files: 'release/*.exe,release/*.dmg' }

@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - name: Regenerate platform icons from SVG
+        run: pnpm icons
       - run: pnpm build:desktop
       - uses: actions/upload-artifact@v4
         with: { name: desktop-${{ matrix.os }}, path: release/*.* }

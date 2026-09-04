@@ -5,12 +5,15 @@ directories:
 files:
   - out/**
 asar: true
-icon: build/icons/icons/icon.ico   # win; mac 用同目录 icon.icns(electron-builder 自动识别)
+# Windows-specific icon (ICO with 16-256px entries)
 win:
+  icon: build/icons/icons/icon.ico
   target: nsis
 nsis:
   oneClick: true
   perMachine: false
+# macOS-specific icon (ICNS generated from 1024x1024.png, already valid)
 mac:
+  icon: build/icons/icons/icon.icns
   target: dmg
-  identity: null   # ad-hoc 签名
+  identity: null
