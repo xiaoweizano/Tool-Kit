@@ -13,7 +13,13 @@ jobs:
       - uses: pnpm/action-setup@v4
         with: { version: 10 }
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: pnpm }
+        with: { node-version: 22, cache: pnpm }
+      - name: Set Electron mirror (China-friendly)
+        run: echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
+      - name: Set Electron Builder binary mirrors
+        run: |
+          echo "ELECTRON_BUILDER_ALLOW_AUTO_UPDATE=1" >> $GITHUB_ENV
+          echo "SNAPPY_ARCH_SUFFIX=x64" >> $GITHUB_ENV
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:desktop
       - uses: softprops/action-gh-release@v2
