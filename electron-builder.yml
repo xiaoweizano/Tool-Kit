@@ -12,8 +12,14 @@ win:
   icon: build/icons/icons/icon.ico
   target: nsis
 nsis:
-  oneClick: true
-  perMachine: false
+  oneClick: false  # 显示安装向导，允许选择安装路径
+  perMachine: false  # 允许当前用户安装
+  allowToChangeInstallationDirectory: true  # 允许选择安装目录
+  createDesktopShortcut: true  # 创建桌面快捷方式
+  createStartMenuShortcut: true  # 创建开始菜单快捷方式
+  shortcutName: 'ToolKit'  # 快捷方式名称
+  # 许可协议（可选，移除后不显示）
+  # license: LICENSE
 # macOS-specific icon (ICNS generated from 1024x1024.png, already valid)
 mac:
   icon: build/icons/icons/icon.icns
