@@ -20,7 +20,7 @@ for (const s of sizes) {
 
 // --- ICO: container with embedded PNG entries ---
 {
-  const entries = [16, 24, 32, 48, 64, 96, 128, 256].map((s) => pngs[s])
+  const entries = [16, 24, 32, 48, 64, 96, 128, 256, 512].map((s) => pngs[s])
   const header = Buffer.alloc(6)
   header.writeUInt16LE(0, 0) // reserved
   header.writeUInt16LE(1, 2) // type: icon
