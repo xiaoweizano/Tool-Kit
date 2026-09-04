@@ -2,12 +2,9 @@ name: release
 on:
   push: { tags: ['v*'] }
 jobs:
-  release:
-    strategy:
-      matrix: { os: [windows-latest, macos-latest] }
-    runs-on: ${{ matrix.os }}
+  build-windows:
+    runs-on: windows-latest
     env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
-    permissions: { contents: write }
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -16,13 +13,44 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - name: Set Electron mirror (China-friendly)
         run: echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
-      - name: Set Electron Builder binary mirrors
-        run: |
-          echo "ELECTRON_BUILDER_ALLOW_AUTO_UPDATE=1" >> $GITHUB_ENV
-          echo "SNAPPY_ARCH_SUFFIX=x64" >> $GITHUB_ENV
       - run: pnpm install --frozen-lockfile
       - name: Regenerate platform icons from SVG
         run: pnpm icons
       - run: pnpm build:desktop
+      - uses: actions/upload-artifact@v4
+        with: { name: win-artifacts, path: release/*.exe }
+  build-macos:
+    runs-on: macos-latest
+    env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - name: Set Electron mirror (China-friendly)
+        run: echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
+      - run: pnpm install --frozen-lockfile
+      - name: Regenerate platform icons from SVG
+        run: pnpm icons
+      - run: pnpm build:desktop
+      - uses: actions/upload-artifact@v4
+        with: { name: mac-artifacts, path: release/*.dmg }
+  publish:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with: { name: win-artifacts, path: dist/win }
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with: { name: mac-artifacts, path: dist/mac }
       - uses: softprops/action-gh-release@v2
-        with: { draft: true, files: 'release/*.exe,release/*.dmg' }
+        with:
+          draft: true
+          files: |
+            dist/win/*.exe
+            dist/mac/*.dmg
