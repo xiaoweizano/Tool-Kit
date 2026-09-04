@@ -1,57 +1,96 @@
 name: ci
 on:
-  push: { branches: [main] }
+  push:
+    branches: [main]
   pull_request:
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 10 }
+        with:
+          version: 10
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+        with:
+          node-version: 22
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint && pnpm typecheck && pnpm test
       - run: pnpm build:web && node scripts/check-web-purity.mjs
       - run: pnpm exec playwright install --with-deps chromium && pnpm exec playwright test
       - uses: actions/upload-artifact@v4
-        with: { name: web, path: dist/web }
-  desktop:
+        with:
+          name: web
+          path: dist/web
+
+  desktop-win:
     needs: test
-    strategy:
-      matrix: { os: [windows-latest, macos-latest] }
-    runs-on: ${{ matrix.os }}
-    env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+    runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 10 }
+        with:
+          version: 10
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Set Electron mirror
+        run: echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
       - run: pnpm install --frozen-lockfile
-      - name: Regenerate platform icons from SVG
+      - name: Regenerate icons
         run: pnpm icons
       - run: pnpm build:desktop
       - uses: actions/upload-artifact@v4
-        with: { name: desktop-${{ matrix.os }}, path: release/*.* }
-  deploy-pages:
+        with:
+          name: win-artifacts
+          path: release/*.exe
+
+  desktop-mac:
     needs: test
-    permissions: { pages: write, id-token: write }
-    environment: github-pages
+    runs-on: macos-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with: { name: web, path: dist/web }
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: dist/web }
-  deploy:
-    needs: deploy-pages
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Set Electron mirror
+        run: echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
+      - run: pnpm install --frozen-lockfile
+      - name: Regenerate icons
+        run: pnpm icons
+      - run: pnpm build:desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-artifacts
+          path: release/*.dmg
+
+  deploy-pages:
+    needs: test
     runs-on: ubuntu-latest
-    permissions: { pages: write, id-token: write }
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web
+          path: dist/web
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/web
       - id: deployment
         uses: actions/deploy-pages@v4
