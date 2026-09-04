@@ -43,7 +43,7 @@ export default function NginxGeneratorPage(): JSX.Element {
           <label className="flex items-center gap-2 text-sm">upstream(每行 host)
             <textarea className="textarea textarea-bordered textarea-sm flex-1 font-mono" rows={2} value={upstreamServers} onChange={(e) => setUpstreamServers(e.target.value)} placeholder="10.0.0.1:8080" /></label>
           <label className="flex items-center gap-2 text-sm">策略
-            <select className="select select-bordered select-sm" value={upstreamStrategy} onChange={(e) => setUpstreamStrategy(e.target.value as Strategy)}>{STRATEGIES.map((s) => <option key={s.id}>{s.label}</option>)}</select></label>
+            <select className="select select-bordered select-sm" value={upstreamStrategy} onChange={(e) => setUpstreamStrategy(e.target.value as Strategy)}>{STRATEGIES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
           <div className="flex flex-wrap gap-2">
             <button className="btn btn-sm btn-primary" onClick={gen}>生成</button>
             <button className="btn btn-sm btn-outline" onClick={check}>配置检查</button>
@@ -98,7 +98,7 @@ export default function NginxGeneratorPage(): JSX.Element {
             <div className="space-y-1">
               {(s.locations ?? []).map((l, li) => (
                 <div key={li} className="flex flex-wrap items-center gap-2 text-sm">
-                  <select className="select select-bordered select-sm" value={l.type} onChange={(e) => patchLoc(i, li, { type: e.target.value as LocationBlock['type'] })}>{LOC_TYPES.map((t) => <option key={t.id}>{t.label}</option>)}</select>
+                  <select className="select select-bordered select-sm" value={l.type} onChange={(e) => patchLoc(i, li, { type: e.target.value as LocationBlock['type'] })}>{LOC_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select>
                   <input className="input input-bordered input-sm w-32 font-mono" value={l.path} onChange={(e) => patchLoc(i, li, { path: e.target.value })} placeholder="/api/" />
                   {l.type === 'proxy' && <input className="input input-bordered input-sm flex-1 font-mono" value={l.proxyPass ?? ''} onChange={(e) => patchLoc(i, li, { proxyPass: e.target.value })} placeholder="http://backend" />}
                   {l.type === 'static' && <input className="input input-bordered input-sm flex-1 font-mono" value={l.root ?? ''} onChange={(e) => patchLoc(i, li, { root: e.target.value })} placeholder="/var/www" />}

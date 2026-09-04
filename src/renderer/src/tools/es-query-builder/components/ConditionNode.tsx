@@ -35,7 +35,10 @@ function LeafRow({ node, onChange, onRemove, onMove }: Omit<Props, 'depth'>): JS
       <select
         className="select select-bordered select-xs font-mono"
         value={node.op}
-        onChange={(e) => onChange({ ...node, op: e.target.value as ConditionOp })}
+        onChange={(e) => {
+          const op = e.target.value as ConditionOp
+          onChange(op === 'range' && typeof node.value !== 'object' ? { ...node, op, value: {} } : { ...node, op })
+        }}
       >
         {OPS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
       </select>

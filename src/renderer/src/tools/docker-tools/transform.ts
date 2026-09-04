@@ -4,18 +4,19 @@ export { DOCKER_COMMANDS } from './data/commands'
 
 export function generateRun(o: RunOptions): ToolResult<string> {
   if (!o.image.trim()) return { status: 'error', kind: 'invalid-input', message: '请填写镜像名' }
+  const shq = (s: string): string => `'${s.replace(/'/g, `'\\''`)}'`
   const parts = ['docker run']
-  if (o.name) parts.push(`--name ${o.name}`)
-  if (o.restart) parts.push(`--restart ${o.restart}`)
-  if (o.network) parts.push(`--network ${o.network}`)
+  if (o.name) parts.push(`--name ${shq(o.name)}`)
+  if (o.restart) parts.push(`--restart ${shq(o.restart)}`)
+  if (o.network) parts.push(`--network ${shq(o.network)}`)
   if (o.logging) {
-    parts.push(`--log-driver ${o.logging.driver}`)
-    for (const [k, v] of Object.entries(o.logging.options)) parts.push(`--log-opt ${k}=${v}`)
+    parts.push(`--log-driver ${shq(o.logging.driver)}`)
+    for (const [k, v] of Object.entries(o.logging.options)) parts.push(`--log-opt ${shq(k)}=${shq(v)}`)
   }
-  o.ports.forEach((p) => parts.push(`-p ${p}`))
-  o.volumes.forEach((v) => parts.push(`-v ${v}`))
-  o.envs.forEach((e) => parts.push(`-e ${e}`))
-  parts.push(o.image)
+  o.ports.forEach((p) => parts.push(`-p ${shq(p)}`))
+  o.volumes.forEach((v) => parts.push(`-v ${shq(v)}`))
+  o.envs.forEach((e) => parts.push(`-e ${shq(e)}`))
+  parts.push(shq(o.image))
   return { status: 'ok', data: parts.join(' ') }
 }
 
@@ -27,7 +28,7 @@ export function generateCompose(services: ComposeService[]): ToolResult<string> 
     const b = [`  ${s.name}:`, `    image: ${s.image}`]
     if (s.ports?.length) b.push('    ports:', ...s.ports.map((p) => `      - "${p}"`))
     if (s.volumes?.length) b.push('    volumes:', ...s.volumes.map((v) => `      - "${v}"`))
-    if (s.envs?.length) b.push('    environment:', ...s.envs.map((e) => `      - ${e}`))
+    if (s.envs?.length) b.push('    environment:', ...s.envs.map((e) => `      - "${e}"`))
     if (s.dependsOn?.length) b.push('    depends_on:', ...s.dependsOn.map((d) => `      - ${d}`))
     if (s.restart) b.push(`    restart: ${s.restart}`)
     if (s.networkMode) b.push(`    network_mode: ${s.networkMode}`)

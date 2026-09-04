@@ -9,6 +9,7 @@ export function convertBase(str: string, opts?: BaseConvOpts): ToolResult<BaseCo
   if (source === 10) {
     for (const k of [2, 8, 16] as Radix[]) { if (s.toLowerCase().startsWith(pref[k])) { source = k; s = s.slice(2) } }
   }
+  if (!s) return { status: 'error', kind: 'invalid-input', message: '请输入数字' }
   const valid: Record<Radix, RegExp> = { 2: /^[01]+$/, 8: /^[0-7]+$/, 10: /^[0-9]+$/, 16: /^[0-9A-Fa-f]+$/ }
   if (!valid[source].test(s)) {
     const bad = [...s].find((c) => !valid[source].test(c))!

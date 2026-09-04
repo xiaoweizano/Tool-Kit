@@ -52,9 +52,9 @@ const depth = (c: Condition): number => {
 
 const toBoolQuery = (c: Condition): unknown => {
   const logic = c.logic ?? 'and'
-  const children = (c.children ?? []).map((child) =>
-    child.children && child.children.length > 0 ? toBoolQuery(child) : toLeaf(child)
-  )
+  const children = (c.children ?? [])
+    .filter((child) => (child.children && child.children.length > 0) || child.field.trim().length > 0)
+    .map((child) => child.children && child.children.length > 0 ? toBoolQuery(child) : toLeaf(child))
   const bool: Record<string, unknown> = {}
   if (logic === 'or') {
     bool.should = children
@@ -65,11 +65,12 @@ const toBoolQuery = (c: Condition): unknown => {
   return { bool }
 }
 
+const anyField = (c: Condition): boolean =>
+  c.children && c.children.length > 0 ? c.children.some(anyField) : c.field.trim().length > 0
+
 export function buildQueryDsl(state: EsQueryState): ToolResult<string> {
   const root = state.rootCondition
-  const hasLeaf = (c: Condition): boolean => !!c.field.trim()
-  if (!hasLeaf(root) && (!root.children || root.children.length === 0))
-    return { status: 'error', kind: 'invalid-input', message: '至少需要一个条件' }
+  if (!anyField(root)) return { status: 'error', kind: 'invalid-input', message: '至少需要一个条件' }
   if (depth(root) > MAX_DEPTH)
     return { status: 'error', kind: 'unsupported', structure: '嵌套', message: `条件嵌套超过 ${MAX_DEPTH} 层,请拆分查询` }
 
@@ -142,6 +143,7 @@ export function generateCode(dsl: string, lang: LangId): ToolResult<string> {
     return { status: 'error', kind: 'invalid-input', message: 'DSL 语法错误' }
   }
   const queryStr = JSON.stringify(body)
+  const goJSON = queryStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
   const idx = 'your_index'
   switch (lang) {
     case 'java':
@@ -149,11 +151,11 @@ export function generateCode(dsl: string, lang: LangId): ToolResult<string> {
     case 'python':
       return { status: 'ok', data: `from elasticsearch import Elasticsearch\n\nclient = Elasticsearch()  # 或传入 host/api_key\n\nresp = client.search(index="${idx}", body=${queryStr})\n# 同步调用;如需异步可换 AsyncElasticsearch 并 await client.search(...)` }
     case 'shell':
-      return { status: 'ok', data: `curl -X POST "http://localhost:9200/${idx}/_search" \\\n  -H "Content-Type: application/json" \\\n  -d '${queryStr}'` }
+      return { status: 'ok', data: `curl -X POST "http://localhost:9200/${idx}/_search" \\\n  -H "Content-Type: application/json" \\\n  -d '${queryStr.replace(/'/g, "'\\''")}'` }
     case 'http':
       return { status: 'ok', data: `POST /${idx}/_search HTTP/1.1\nHost: localhost:9200\nContent-Type: application/json\n\n${queryStr}` }
     case 'go':
-      return { status: 'ok', data: `import "github.com/elastic/go-elasticsearch/v8"\nimport "strings"\n\n// v8 用 es.Search 传入 body(Body 读 io.Reader)\nreq := esapi.SearchRequest{Index: []string{"${idx}"}, Body: strings.NewReader(\`${queryStr}\`)}` }
+      return { status: 'ok', data: `import "github.com/elastic/go-elasticsearch/v8"\nimport "strings"\n\n// v8 用 es.Search 传入 body(Body 读 io.Reader)\nreq := esapi.SearchRequest{Index: []string{"${idx}"}, Body: strings.NewReader("${goJSON}")}` }
     case 'node':
       return { status: 'ok', data: `import { Client } from '@elastic/elasticsearch'\n\nconst client = new Client({ node: 'http://localhost:9200' })\n\nawait client.search({ index: '${idx}', body: ${queryStr} })` }
     default:

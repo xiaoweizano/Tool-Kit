@@ -5,7 +5,7 @@ describe('generateRun', () => {
   it('builds docker run command', () => {
     const r = generateRun({ image: 'nginx:alpine', ports: ['8080:80'], volumes: [], envs: [], restart: 'unless-stopped' })
     expect(r.status).toBe('ok')
-    if (r.status === 'ok') { expect(r.data).toContain('docker run --restart unless-stopped -p 8080:80 nginx:alpine') }
+    if (r.status === 'ok') { expect(r.data).toContain("docker run --restart 'unless-stopped' -p '8080:80' 'nginx:alpine'") }
   })
   it('missing image invalid', () => {
     const r = generateRun({ image: '', ports: [], volumes: [], envs: [] })
@@ -106,8 +106,17 @@ describe('docker v2', () => {
     const r = generateRun({ image: 'app', ports: [], volumes: [], envs: [], logging: { driver: 'json-file', options: { 'max-size': '10m' } }, network: 'host' })
     expect(r.status).toBe('ok')
     if (r.status === 'ok') {
-      expect(r.data).toContain('--network host')
-      expect(r.data).toContain('--log-driver json-file')
+      expect(r.data).toContain("--network 'host'")
+      expect(r.data).toContain("--log-driver 'json-file'")
+    }
+  })
+  it('quotes shell-metacharacter values to avoid injection', () => {
+    const r = generateRun({ image: 'app', ports: [], volumes: [], envs: [], name: 'a;b', network: 'x y' })
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.data).toContain("--name 'a;b'")
+      expect(r.data).toContain("--network 'x y'")
+      expect(r.data).not.toContain('--name a;b')
     }
   })
   it('compose emits restart + network_mode + logging', () => {

@@ -151,3 +151,23 @@ describe('generateCode 多语言', () => {
     if (r.status === 'error') expect(r.kind).toBe('unsupported')
   })
 })
+
+describe('buildQueryDsl 空字段叶子', () => {
+  it('过滤字段为空的同级条件,不再产出 {"term":{"":"value"}}', () => {
+    const r = buildQueryDsl(state({
+      id: 'root', field: '', op: 'eq', value: '', logic: 'and', children: [
+        { id: 'a', field: 'name', op: 'eq', value: 'x' },
+        { id: 'b', field: '', op: 'eq', value: 'y' },
+      ],
+    }))
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(JSON.parse(r.data).query).toEqual({ bool: { must: [{ term: { name: 'x' } }] } })
+    }
+  })
+  it('全部叶子字段为空时报「至少需要一个条件」', () => {
+    const r = buildQueryDsl(state({ id: 'root', field: '', op: 'eq', value: '', children: [{ id: 'a', field: '', op: 'eq', value: 'y' }] }))
+    expect(r.status).toBe('error')
+    if (r.status === 'error') expect(r.kind).toBe('invalid-input')
+  })
+})
