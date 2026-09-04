@@ -36,6 +36,18 @@
 - **No silent failure** — every error is seen and localised with a tri-state result (OK / ERROR / EMPTY).
 - **Multi-theme** — daisyUI theme system: 深色工作台 (dark workbench) / 纸白 (paper) / 焦糖 (caramel), plus custom.
 
+## 📦 Download
+
+Pre-built desktop installers are published as [Releases](https://github.com/xiaoweizano/Tool-Kit/releases).
+
+| Platform | File | Size |
+|---|---|---|
+| Windows | `ToolKit-0.1.0-setup.exe` | ~60 MB |
+| macOS (Apple Silicon) | `ToolKit-0.1.0-arm64.dmg` | ~65 MB |
+| macOS (Intel) | `ToolKit-0.1.0-x64.dmg` | ~65 MB |
+
+> **First run warning:** builds are unsigned. On Windows accept the SmartScreen prompt; on macOS right-click → **Open** once. See [First run](#first-run-unsigned-builds) for details.
+
 ## 🧰 Tools (21)
 
 ### Data & Format
@@ -99,6 +111,19 @@ pnpm typecheck    # tsc --noEmit
 pnpm build:web    # static output → dist/web
 pnpm build:desktop  # Win nsis / Mac dmg (unsigned; see "First run")
 ```
+
+### Build the desktop app locally
+
+```bash
+# Full build with signing (requires codesigning identities configured)
+pnpm build:desktop
+
+# Artifacts land in dist_electron/
+#   Windows → dist_electron/ToolKit Setup 0.1.0.exe
+#   macOS   → dist_electron/ToolKit-0.1.0-arm64.dmg (or -x64.dmg)
+```
+
+The desktop build uses `electron-builder` with NSIS (Windows) and DMG (macOS). Configuration is in [`electron-builder.yml`](electron-builder.yml). To sign on macOS, set `electronBuildConfig.mac.identity` in that file and run with `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` env vars.
 
 ## 🏗 Architecture — one codebase, two outputs
 

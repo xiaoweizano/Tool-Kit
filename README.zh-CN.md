@@ -36,6 +36,18 @@
 - **无静默失败** —— 每个错误都被看见并定位(OK / ERROR / EMPTY 三态)。
 - **多主题** —— daisyUI 主题系统:深色工作台 / 纸白 / 焦糖,支持自定义。
 
+## 📦 下载
+
+桌面版预构建安装包发布在 [Releases](https://github.com/xiaoweizano/Tool-Kit/releases)。
+
+| 平台 | 文件 | 大小 |
+|---|---|---|
+| Windows | `ToolKit-0.1.0-setup.exe` | ~60 MB |
+| macOS (Apple Silicon) | `ToolKit-0.1.0-arm64.dmg` | ~65 MB |
+| macOS (Intel) | `ToolKit-0.1.0-x64.dmg` | ~65 MB |
+
+> **首次运行提示：** 构建版未签名。Windows 上接受 SmartScreen 提示；macOS 上右键 → **打开**一次即可。详见「首次运行」。
+
 ## 🧰 工具清单(21)
 
 ### 数据与格式
@@ -99,6 +111,19 @@ pnpm typecheck    # tsc --noEmit
 pnpm build:web    # 静态产物 → dist/web
 pnpm build:desktop  # Win nsis / Mac dmg(未签名;见「首次运行」)
 ```
+
+### 本机构建桌面版
+
+```bash
+# 完整构建(需配置代码签名身份)
+pnpm build:desktop
+
+# 产物输出到 dist_electron/
+#   Windows → dist_electron/ToolKit Setup 0.1.0.exe
+#   macOS   → dist_electron/ToolKit-0.1.0-arm64.dmg (或 -x64.dmg)
+```
+
+桌面构建使用 `electron-builder`，配置在 [`electron-builder.yml`](electron-builder.yml)。macOS 签名时在文件里设置 `electronBuildConfig.mac.identity`，并在运行命令时传入 `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` 环境变量。
 
 ## 🏗 架构:一套代码,双输出
 
