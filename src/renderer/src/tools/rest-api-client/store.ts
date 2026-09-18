@@ -89,6 +89,7 @@ interface RestState {
   move: (id: string, destParentId: string) => void
   remove: (id: string) => void
   addEnv: (name: string) => void
+  renameEnv: (id: string, name: string) => void
   setEnvVars: (id: string, vars: Record<string, string>) => void
   deleteEnv: (id: string) => void
   setActiveEnv: (id: string) => void
@@ -138,6 +139,9 @@ export const useRestStore = create<RestState>()(
           const env: Env = { id: uid(), name, vars: {} }
           return { environments: [...s.environments, env], activeEnvId: s.activeEnvId || env.id }
         }),
+
+      renameEnv: (id, name) =>
+        set((s) => ({ environments: s.environments.map((e) => (e.id === id ? { ...e, name } : e)) })),
 
       setEnvVars: (id, vars) =>
         set((s) => ({ environments: s.environments.map((e) => (e.id === id ? { ...e, vars } : e)) })),

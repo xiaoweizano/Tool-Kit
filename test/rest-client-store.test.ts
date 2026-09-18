@@ -47,6 +47,18 @@ describe('rest store', () => {
     try { useRestStore.getState().addEnv('dev') } finally { (localStorage as { setItem?: unknown }).setItem = original }
     expect(useRestStore.getState().writeFailed).toBe(true)
   })
+  it('renameEnv 不可变改环境名且不动其它环境', () => {
+    useRestStore.getState().addEnv('dev')
+    useRestStore.getState().addEnv('prod')
+    const before = useRestStore.getState().environments
+    const dev = before.find((e) => e.name === 'dev')!
+    useRestStore.getState().renameEnv(dev.id, '开发')
+    const after = useRestStore.getState().environments
+    expect(after.find((e) => e.id === dev.id)!.name).toBe('开发')
+    expect(before.find((e) => e.id === dev.id)!.name).toBe('dev') // 原对象未被就地改写
+    expect(after).not.toBe(before)
+    expect(after.find((e) => e.name === 'prod')!.id).toBe(before.find((e) => e.name === 'prod')!.id)
+  })
   it('rename 不可变且能改嵌套节点', () => {
     useRestStore.getState().addGroup('', '租户')
     const before = useRestStore.getState().collections[0]
