@@ -114,4 +114,40 @@ describe('rest client sidebar CRUD', () => {
     fireEvent.click(screen.getByTestId('env-add-btn'))
     expect(confirmSpy).not.toHaveBeenCalled()
   })
+
+  it('9. 首次使用(空树)点「+ 请求」→ 建默认分组并落入请求,绝不静默丢弃', () => {
+    // 空集合:旧代码里 addRequest('') 会被 insert 静默丢弃(collections 保持空)
+    vi.spyOn(window, 'prompt').mockReturnValue('首个请求')
+    render(<RestApiClientPage />)
+    fireEvent.click(screen.getByTestId('add-request-btn'))
+    const cols = useRestStore.getState().collections
+    expect(cols.length).toBe(1)
+    expect(cols[0].type).toBe('group')
+    expect(cols[0].name).toBe('默认分组')
+    expect(cols[0].children.length).toBe(1)
+    const req = cols[0].children[0]
+    expect(req.type).toBe('request')
+    expect(req.name).toBe('首个请求')
+  })
+
+  it('10. 选中分组后删除它,再点「+ 请求」→ 请求仍落入真实分组(不消失)', () => {
+    // 预置两个顶层分组 A、B
+    useRestStore.getState().addGroup('', '组A')
+    useRestStore.getState().addGroup('', '组B')
+    const gidA = useRestStore.getState().collections.find((c) => c.name === '组A')!.id
+    render(<RestApiClientPage />)
+    // 选中 A 作为父节点(点击分组标题)
+    fireEvent.click(screen.getByTestId(`group-node-${gidA}`))
+    // 删除 A(A 无子项,不触发确认;仍 stub 以防)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    fireEvent.click(screen.getByTestId(`delete-btn-${gidA}`))
+    expect(useRestStore.getState().collections.find((c) => c.id === gidA)).toBeFalsy()
+    // 旧代码:selectedParentId 仍指向已删除的 A → addRequest 被静默丢弃
+    vi.spyOn(window, 'prompt').mockReturnValue('迁移后的请求')
+    fireEvent.click(screen.getByTestId('add-request-btn'))
+    const reqNames = useRestStore
+      .getState()
+      .collections.flatMap((g) => g.children.map((n) => n.name))
+    expect(reqNames).toContain('迁移后的请求')
+  })
 })

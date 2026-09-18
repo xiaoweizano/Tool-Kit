@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRestStore } from '../store'
 import type { CollectionNode, Env, GroupNode, HistoryEntry, RequestNode } from '../types'
 
@@ -27,14 +27,42 @@ export function Sidebar(p: Props): JSX.Element {
   const moveTargets = collectGroups(p.collections)
   const activeEnv = p.environments.find((e) => e.id === p.activeEnvId)
 
+  // 现存分组 id 集合:用于校验 selectedParentId 是否仍指向活节点
+  const groupIds = useMemo(() => new Set(moveTargets.map((g) => g.id)), [moveTargets])
+
+  // I1:选中的父分组被删除后,清空陈旧 selectedParentId,避免后续 insert 落到不存在的父节点被静默丢弃
+  useEffect(() => {
+    if (selectedParentId && !groupIds.has(selectedParentId)) setSelectedParentId('')
+  }, [selectedParentId, groupIds])
+
   const onAddGroup = (): void => {
     const name = window.prompt('新分组名称')
-    if (name && name.trim()) useRestStore.getState().addGroup(selectedParentId, name.trim())
+    if (!name || !name.trim()) return
+    // 陈旧父(已删)在 useEffect 清理前也可能命中,这里以活动树为准:非法父回退到根
+    const parentId = groupIds.has(selectedParentId) ? selectedParentId : ''
+    useRestStore.getState().addGroup(parentId, name.trim())
   }
   const onAddRequest = (): void => {
     const name = window.prompt('新请求名称')
     if (!name || !name.trim()) return
-    useRestStore.getState().addRequest(selectedParentId, {
+    // C1:确定性地解析一个合法父分组,绝不产生静默丢弃。
+    //   1) 选中的分组仍存活 → 落它;
+    //   2) 未选/选中已失效但树里有分组 → 落首个顶层分组并选中(让结果可见);
+    //   3) 完全没有分组 → 先建默认分组再落入(消除 no-op)。
+    let parentId = groupIds.has(selectedParentId) ? selectedParentId : ''
+    if (!parentId) {
+      const firstTop = p.collections[0]
+      if (firstTop) {
+        parentId = firstTop.id
+      } else {
+        // 完全没有分组:先建默认分组再落入(消除首次使用的静默 no-op)
+        useRestStore.getState().addGroup('', '默认分组')
+        parentId = useRestStore.getState().collections[0]?.id ?? ''
+      }
+      setSelectedParentId(parentId)
+    }
+    if (!parentId) return
+    const ok = useRestStore.getState().addRequest(parentId, {
       id: crypto.randomUUID(),
       name: name.trim(),
       method: 'GET',
@@ -42,6 +70,7 @@ export function Sidebar(p: Props): JSX.Element {
       headers: [],
       body: ''
     })
+    if (!ok) window.alert('新建请求失败:目标分组不存在')
   }
   const onAddEnv = (): void => {
     const name = window.prompt('新环境名称')
@@ -309,6 +338,7 @@ function TreeNode(p: NodeProps): JSX.Element {
     <div>
       <div className="group flex items-center gap-1" style={pad}>
         <button
+          data-testid={`group-node-${node.id}`}
           className="btn btn-xs btn-justify btn-ghost min-w-0 flex-1 justify-start gap-1 font-mono"
           onClick={() => {
             setOpen((o) => !o)

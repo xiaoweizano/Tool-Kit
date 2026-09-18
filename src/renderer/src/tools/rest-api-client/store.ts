@@ -23,12 +23,22 @@ function insertChild(children: CollectionNode[], parentId: string, child: Collec
   })
 }
 
-/** 插入到集合树;parentId 为空表示根层(根层只接受 group) */
-function insert(collections: GroupNode[], parentId: string, child: CollectionNode): GroupNode[] {
-  if (!parentId) return child.type === 'group' ? [...collections, child] : collections
-  return collections.map((g) =>
-    g.id === parentId ? { ...g, children: [...g.children, child] } : { ...g, children: insertChild(g.children, parentId, child) }
-  )
+/**
+ * 插入到集合树;parentId 为空表示根层(根层只接受 group)。
+ * 返回 ok 让调用方感知"被拒"(根层落请求 / 父不存在),不再静默丢弃。
+ */
+function insert(collections: GroupNode[], parentId: string, child: CollectionNode): { collections: GroupNode[]; ok: boolean } {
+  if (!parentId) {
+    return child.type === 'group' ? { collections: [...collections, child], ok: true } : { collections, ok: false }
+  }
+  const parent = findIn(collections, parentId)
+  if (!parent || parent.type !== 'group') return { collections, ok: false }
+  return {
+    collections: collections.map((g) =>
+      g.id === parentId ? { ...g, children: [...g.children, child] } : { ...g, children: insertChild(g.children, parentId, child) }
+    ),
+    ok: true
+  }
 }
 
 function removeChild(children: CollectionNode[], id: string): CollectionNode[] {
@@ -83,8 +93,8 @@ interface RestState {
   activeEnvId: string
   history: HistoryEntry[]
   writeFailed: boolean
-  addGroup: (parentId: string, name: string) => void
-  addRequest: (parentId: string, req: NewRequest) => void
+  addGroup: (parentId: string, name: string) => boolean
+  addRequest: (parentId: string, req: NewRequest) => boolean
   rename: (id: string, name: string) => void
   move: (id: string, destParentId: string) => void
   remove: (id: string) => void
@@ -109,11 +119,25 @@ export const useRestStore = create<RestState>()(
       history: [],
       writeFailed: false,
 
-      addGroup: (parentId, name) =>
-        set((s) => ({ collections: insert(s.collections, parentId, { id: uid(), type: 'group', name, children: [] }) })),
+      addGroup: (parentId, name) => {
+        let ok = false
+        set((s) => {
+          const r = insert(s.collections, parentId, { id: uid(), type: 'group', name, children: [] })
+          ok = r.ok
+          return { collections: r.collections }
+        })
+        return ok
+      },
 
-      addRequest: (parentId, req) =>
-        set((s) => ({ collections: insert(s.collections, parentId, { ...req, type: 'request' }) })),
+      addRequest: (parentId, req) => {
+        let ok = false
+        set((s) => {
+          const r = insert(s.collections, parentId, { ...req, type: 'request' })
+          ok = r.ok
+          return { collections: r.collections }
+        })
+        return ok
+      },
 
       rename: (id, name) => set((s) => ({ collections: rename(s.collections, id, name) })),
 
@@ -129,7 +153,7 @@ export const useRestStore = create<RestState>()(
           } else if (node.type !== 'group') {
             return s // 根层只允许 group
           }
-          return { collections: insert(remove(s.collections, id), destParentId, node) }
+          return { collections: insert(remove(s.collections, id), destParentId, node).collections }
         }),
 
       remove: (id) => set((s) => ({ collections: remove(s.collections, id) })),

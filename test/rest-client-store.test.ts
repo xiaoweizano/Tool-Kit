@@ -70,4 +70,20 @@ describe('rest store', () => {
     expect(after).not.toBe(before)
     expect(after.children[0].name).toBe('子组')
   })
+  it('insert 拒绝被感知:根层落请求/父不存在时 addRequest 返回 false 且不改树', () => {
+    // 空树:请求不能落根层(根层只接受分组)
+    expect(useRestStore.getState().addRequest('', { id: 'x1', name: 'R', method: 'GET', url: '', headers: [], body: '' })).toBe(false)
+    expect(useRestStore.getState().collections.length).toBe(0)
+    // 父不存在:返回 false,不新增任何子节点
+    useRestStore.getState().addGroup('', 'G')
+    const req = { id: 'x2', name: 'R2', method: 'GET', url: '', headers: [], body: '' }
+    expect(useRestStore.getState().addRequest('ghost-parent', req)).toBe(false)
+    expect(useRestStore.getState().collections[0].children.length).toBe(0)
+    // 合法父:返回 true 并真正落入
+    const gid = useRestStore.getState().collections[0].id
+    expect(useRestStore.getState().addRequest(gid, req)).toBe(true)
+    expect(useRestStore.getState().collections[0].children.length).toBe(1)
+    // 合法分组(根层)add 返回 true
+    expect(useRestStore.getState().addGroup('', 'G2')).toBe(true)
+  })
 })
