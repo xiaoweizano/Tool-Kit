@@ -83,13 +83,75 @@ function createWindow(): void {
 
 ipcMain.handle('check-update', async () => latestReleaseApi())
 ipcMain.handle('open-releases', () => { void shell.openExternal(releasesUrl) })
-ipcMain.handle('net-fetch', async (_e, payload: { url: string; init?: { method?: string; headers?: Record<string, string>; body?: string } }) => {
-  const res = await net.fetch(payload.url, {
-    method: payload.init?.method ?? 'GET',
-    headers: payload.init?.headers,
-    body: payload.init?.body
-  })
-  return { ok: res.ok, status: res.status, body: await res.text() }
+type MainRes = {
+  ok: boolean
+  status: number
+  statusText?: string
+  headers?: Record<string, string>
+  body?: string
+  bodyBytes?: number
+  finalUrl?: string
+  kind?: string
+  message?: string
+}
+const inflight = new Map<string, AbortController>()
+ipcMain.handle(
+  'net-fetch',
+  async (
+    _e,
+    p: {
+      url: string
+      requestId?: string
+      timeoutMs?: number
+      init?: { method?: string; headers?: Record<string, string>; body?: string }
+    }
+  ): Promise<MainRes> => {
+    const ac = new AbortController()
+    if (p.requestId) inflight.set(p.requestId, ac)
+    const timeoutMs = p.timeoutMs ?? 15000
+    let timedOut = false
+    const timeoutSignal = AbortSignal.timeout(timeoutMs)
+    timeoutSignal.addEventListener('abort', () => {
+      timedOut = true
+    })
+    const signal = AbortSignal.any([ac.signal, timeoutSignal])
+    try {
+      const res = await net.fetch(p.url, {
+        method: p.init?.method ?? 'GET',
+        headers: p.init?.headers,
+        body: p.init?.body,
+        signal
+      })
+      const body = await res.text()
+      const headers: Record<string, string> = {}
+      res.headers.forEach((v, k) => {
+        headers[k] = headers[k] ? `${headers[k]}, ${v}` : v
+      })
+      const cl = res.headers.get('content-length')
+      return {
+        ok: true,
+        status: res.status,
+        statusText: res.statusText,
+        headers,
+        body,
+        bodyBytes: cl ? Number(cl) : Buffer.byteLength(body, 'utf8'),
+        finalUrl: res.url
+      }
+    } catch (err) {
+      const e = err as { name?: string; message?: string }
+      const kind = timedOut ? 'timeout' : /abort/i.test(e.name ?? '') ? 'aborted' : 'network'
+      return { ok: false, status: 0, kind, message: e.message ?? String(err) }
+    } finally {
+      if (p.requestId) inflight.delete(p.requestId)
+    }
+  }
+)
+ipcMain.handle('net-cancel', (_e, requestId: string): boolean => {
+  const ac = inflight.get(requestId)
+  if (!ac) return false
+  ac.abort('user-cancel')
+  inflight.delete(requestId)
+  return true
 })
 
 app.whenReady().then(() => {
