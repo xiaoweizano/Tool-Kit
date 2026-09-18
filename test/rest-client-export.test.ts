@@ -55,4 +55,63 @@ describe('bundle import/export', () => {
     useRestStore.getState().addEnv('empty')
     expect(bundleHasSecrets()).toBe(false)
   })
+
+  it('导出后清空再导入还原集合树(组+子请求)', () => {
+    const s = useRestStore.getState()
+    s.addGroup('', '租户')
+    const gid = useRestStore.getState().collections[0].id
+    s.addRequest(gid, {
+      id: 'child-req',
+      type: 'request',
+      name: '登录',
+      method: 'POST',
+      url: '{{baseUrl}}/login',
+      headers: [],
+      body: '{}'
+    })
+    const before = JSON.stringify(useRestStore.getState().collections)
+    const b = exportBundle()
+    useRestStore.setState({ collections: [] })
+    expect(importBundle(b).ok).toBe(true)
+    const cols = useRestStore.getState().collections
+    expect(cols.length).toBe(1)
+    expect(cols[0]).toMatchObject({ id: gid, type: 'group', name: '租户' })
+    expect(cols[0].children.length).toBe(1)
+    expect(cols[0].children[0]).toMatchObject({
+      id: 'child-req',
+      type: 'request',
+      name: '登录',
+      method: 'POST',
+      url: '{{baseUrl}}/login'
+    })
+    expect(JSON.stringify(cols)).toBe(before)
+  })
+
+  it('重复导入同一 bundle 不产生重复条目(id 跳过)', () => {
+    const s = useRestStore.getState()
+    s.addGroup('', '组A')
+    const gidA = useRestStore.getState().collections[0].id
+    s.addRequest(gidA, { id: 'req-a', type: 'request', name: 'a', method: 'GET', url: 'u/a', headers: [], body: '' })
+    s.addGroup('', '组B')
+    const gidB = useRestStore.getState().collections[1].id
+    s.addRequest(gidB, { id: 'req-b', type: 'request', name: 'b', method: 'GET', url: 'u/b', headers: [], body: '' })
+    s.addEnv('dev')
+    const b = exportBundle()
+    useRestStore.setState({ collections: [], environments: [] })
+    expect(importBundle(b).ok).toBe(true)
+    const afterFirst = {
+      groups: useRestStore.getState().collections.length,
+      children: useRestStore.getState().collections.map((g) => g.children.length),
+      envs: useRestStore.getState().environments.length
+    }
+    expect(importBundle(b).ok).toBe(true)
+    const afterSecond = {
+      groups: useRestStore.getState().collections.length,
+      children: useRestStore.getState().collections.map((g) => g.children.length),
+      envs: useRestStore.getState().environments.length
+    }
+    expect(afterSecond).toEqual(afterFirst)
+    expect(afterSecond.groups).toBe(2)
+    expect(afterSecond.envs).toBe(1)
+  })
 })

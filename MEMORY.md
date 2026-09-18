@@ -1,0 +1,1 @@
+- [Project-scoped writes](memory/feedback-project-scoped-writes.md) — 所有文件写入限定在项目目录内
