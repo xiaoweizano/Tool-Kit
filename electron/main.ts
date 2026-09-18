@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, net, Menu, dialog, type MenuItemConstructorOptions } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, net, Menu, type MenuItemConstructorOptions } from 'electron'
 import { join } from 'node:path'
 import { releasesUrl, latestReleaseApi } from './update'
 
