@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseCurl, tokenize } from '@tools/rest-api-client/curl-parse'
+import { buildCurl } from '@tools/rest-api-client/curl-build'
+import type { RequestModel } from '@tools/rest-api-client/types'
 
 const ok = (t: string) => {
   const r = parseCurl(t)
@@ -130,5 +132,22 @@ describe('curl-parse edge rejections', () => {
       if (r.status !== 'error' || r.kind !== 'invalid-input') throw new Error(JSON.stringify(r))
       expect(r.message).toContain('Copy as cURL (bash)')
     }
+  })
+})
+
+describe('curl round-trip', () => {
+  it('build→parse 语义一致', () => {
+    const req: RequestModel = {
+      method: 'POST',
+      url: 'https://x/a?b=1',
+      headers: [{ id: '1', key: 'content-type', value: 'application/json' }],
+      body: '{"k":"v"}',
+    }
+    const back = parseCurl(buildCurl(req))
+    if (back.status !== 'ok') throw new Error('parse fail')
+    expect(back.data.method).toBe('POST')
+    expect(back.data.url).toBe('https://x/a?b=1')
+    expect(back.data.body).toBe('{"k":"v"}')
+    expect(back.data.headers.find((h) => h.key === 'content-type')?.value).toBe('application/json')
   })
 })
