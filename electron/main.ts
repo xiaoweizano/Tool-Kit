@@ -1,9 +1,9 @@
-import { app, shell, BrowserWindow, ipcMain, net, Menu, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, net, Menu, dialog, type MenuItemConstructorOptions } from 'electron'
 import { join } from 'node:path'
 import { releasesUrl, latestReleaseApi } from './update'
 
 // 中文菜单
-const menuTemplate: Menu.BuildableMenuTemplateItem[] = [
+const menuTemplate: MenuItemConstructorOptions[] = [
   {
     label: '文件',
     submenu: [
