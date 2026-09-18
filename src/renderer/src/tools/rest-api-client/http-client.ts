@@ -34,6 +34,7 @@ export async function sendRequest(
   }
   const b = resolveVars(req.body, vars)
   undef.push(...b.undefinedVars)
+  const undefinedVars = [...new Set(undef)]
 
   const t0 = Date.now()
   try {
@@ -42,7 +43,7 @@ export async function sendRequest(
       { method: req.method, headers, body: b.resolved || undefined },
       { requestId, timeoutMs: opts.timeoutMs }
     )
-    return { status: 'ok', data: { ...res, durationMs: Date.now() - t0 } }
+    return { status: 'ok', data: { ...res, durationMs: Date.now() - t0, undefinedVars } }
   } catch (e) {
     if (e instanceof NetFetchError) {
       return { status: 'error', kind: 'engine', message: KIND_MSG[e.kind] ?? e.message }

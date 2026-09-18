@@ -55,5 +55,6 @@ export interface HistoryEntry {
 
 export type ResponseModel = NetFetchOk & {
   durationMs: number
+  undefinedVars: string[]
   kind?: string
 }

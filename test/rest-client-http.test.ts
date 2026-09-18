@@ -41,6 +41,16 @@ describe('sendRequest', () => {
     await hc.sendRequest({ method: 'GET', url: 'u', headers: [], body: '' } as never, undefined as never, { timeoutMs: 15000 })
     expect(vi.mocked(http.httpFetch).mock.calls[0][1]?.body).toBeUndefined()
   })
+  it('url 与 body 中同一未定义变量去重后返回(undefinedVars 恰好一次)', async () => {
+    vi.mocked(http.httpFetch).mockResolvedValue({ ok: true, status: 200, statusText: 'OK', headers: {}, body: '', bodyBytes: 0, finalUrl: 'u' })
+    const r = await hc.sendRequest(
+      { method: 'POST', url: '{{missing}}/x', headers: [], body: '{"a":"{{missing}}"}' } as never,
+      { id: 'e', name: 'dev', vars: {} } as never,
+      { timeoutMs: 15000 }
+    )
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(r.data.undefinedVars.filter((v) => v === 'missing')).toHaveLength(1)
+  })
   it('network 类错误映射为桌面版提示文案', async () => {
     vi.mocked(http.httpFetch).mockRejectedValue(new NetFetchError('network', 'Failed to fetch'))
     const r = await hc.sendRequest(req as never, undefined as never, { timeoutMs: 15000 })
