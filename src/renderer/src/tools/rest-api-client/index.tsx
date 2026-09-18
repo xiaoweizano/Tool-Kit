@@ -141,8 +141,9 @@ export default function RestApiClientPage(): JSX.Element {
     void navigator.clipboard?.writeText(text).catch(() => {})
   }, [draft])
 
+  // 另存为副本是「防丢」动作:它不销毁当前草稿,故绝不弹丢弃确认,
+  // 否则用户在确认框点「取消」会静默中断保存、重新引入丢工作风险。
   const onSaveCopy = useCallback((): void => {
-    if (!confirmDiscardIfDirty()) return
     let gid = collections[0]?.id
     if (!gid) {
       addGroup('', '默认集合')
@@ -150,7 +151,7 @@ export default function RestApiClientPage(): JSX.Element {
     }
     addRequest(gid, { id: uid(), name: name || '副本', method: draft.method, url: draft.url, headers: draft.headers, body: draft.body })
     setBaseline(clone(draft))
-  }, [addRequest, addGroup, collections, confirmDiscardIfDirty, draft, name])
+  }, [addRequest, addGroup, collections, draft, name])
 
   return (
     <div className="flex h-full min-h-0 flex-col">

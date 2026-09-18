@@ -19,4 +19,16 @@ describe('rest client UI', () => {
     fireEvent.keyDown(screen.getByTestId('url-input'), { key: 'Enter', ctrlKey: true })
     await screen.findByText(/200/)
   })
+  it('编辑 query 参数值时输入框不重挂载(焦点保留,URL 双向同步)', () => {
+    render(<RestApiClientPage />)
+    fireEvent.change(screen.getByTestId('url-input'), { target: { value: 'https://api.test/users?page=1' } })
+    const valueInput = screen.getByDisplayValue('1') as HTMLInputElement
+    valueInput.focus()
+    expect(document.activeElement).toBe(valueInput)
+    fireEvent.change(valueInput, { target: { value: '12' } })
+    expect(document.activeElement).toBe(valueInput)
+    fireEvent.change(valueInput, { target: { value: '123' } })
+    expect(document.activeElement).toBe(valueInput)
+    expect((screen.getByTestId('url-input') as HTMLInputElement).value).toBe('https://api.test/users?page=123')
+  })
 })

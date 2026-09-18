@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { newKv, parseQuery, serializeQuery } from '../query-params'
 import { resolveVars } from '../env-resolve'
 import type { Env, KV, RequestModel } from '../types'
@@ -24,23 +24,46 @@ interface Props {
 export function RequestPanel(p: Props): JSX.Element {
   const [curlText, setCurlText] = useState('')
   const [formatMsg, setFormatMsg] = useState('')
-
-  const { base, params } = parseQuery(p.draft.url)
   const [newKey, setNewKey] = useState('')
   const [newVal, setNewVal] = useState('')
 
+  // query 参数行以本地 state 为准,id 保持稳定 —— 避免每次渲染 parseQuery 重新生成
+  // randomUUID 导致 key 变化,进而让输入框重挂载(丢焦点、破坏中文输入法组合)。
+  const [params, setParams] = useState<KV[]>(() => parseQuery(p.draft.url).params)
+  // 记录 params state 当前对应的 URL;只有当 URL 从「参数编辑器外部」改变时才回同步表格
+  const syncedUrlRef = useRef(p.draft.url)
+
+  const qIdx = p.draft.url.indexOf('?')
+  const base = qIdx === -1 ? p.draft.url : p.draft.url.slice(0, qIdx)
+
+  // URL 被外部改写(地址栏输入 / 载入请求 / cURL 导入 / 历史)→ 重新解析并回表。
+  // 按「key 名 + 位置」复用旧 id,使未改动的行不重挂载。
+  useEffect(() => {
+    if (p.draft.url === syncedUrlRef.current) return
+    syncedUrlRef.current = p.draft.url
+    setParams((prev) => reconcileParams(parseQuery(p.draft.url).params, prev))
+  }, [p.draft.url])
+
   const setUrl = (url: string): void => p.onChange({ url })
 
+  // 参数编辑器内的改动:以当前行为准提交,同时把 URL 推给父级并标记为「已知」,
+  // 阻止上面的 effect 再回解析覆盖(否则会重挂载并打断正在编辑的输入框)。
+  const commit = (rows: KV[]): void => {
+    const url = serializeQuery(base, rows)
+    syncedUrlRef.current = url
+    setParams(rows)
+    p.onChange({ url })
+  }
+
   const editParam = (i: number, patch: Partial<KV>): void => {
-    const rows = params.map((row, idx) => (idx === i ? { ...row, ...patch } : row))
-    setUrl(serializeQuery(base, rows))
+    commit(params.map((row, idx) => (idx === i ? { ...row, ...patch } : row)))
   }
   const removeParam = (i: number): void => {
-    setUrl(serializeQuery(base, params.filter((_, idx) => idx !== i)))
+    commit(params.filter((_, idx) => idx !== i))
   }
   const addParam = (): void => {
     if (!newKey.trim()) return
-    setUrl(serializeQuery(base, [...params, newKv(newKey, newVal)]))
+    commit([...params, newKv(newKey, newVal)])
     setNewKey('')
     setNewVal('')
   }
@@ -262,6 +285,14 @@ export function RequestPanel(p: Props): JSX.Element {
       </div>
     </section>
   )
+}
+
+/** 外部 URL 回同步时,按「key 名 + 位置」复用旧行的 id,保持输入框 DOM 稳定 */
+function reconcileParams(parsed: KV[], prev: KV[]): KV[] {
+  return parsed.map((row, i) => {
+    const old = prev[i]
+    return old && old.key === row.key ? { ...row, id: old.id } : row
+  })
 }
 
 function methodColor(m: string): string {

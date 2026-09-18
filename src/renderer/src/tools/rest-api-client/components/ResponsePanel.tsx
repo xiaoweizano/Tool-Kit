@@ -51,7 +51,9 @@ export function ResponsePanel({ response, error, sending, onCancel }: Props): JS
   const preview = truncated ? body.slice(0, MB) : body
   const ct = (response.headers['content-type'] ?? '').toLowerCase()
   const isJson = ct.includes('json') || /^\s*[[{]/.test(body)
-  const jsonValue = isJson ? safeParse(body) : null
+  // 超过 1MB 的响应:绝不整体 JSON.parse、也绝不渲染完整 JsonView 树(会冻结界面);
+  // 只走下方截断 <pre> 预览分支。上方的截断提示条已说明「复制」「深链」仍使用全量文本。
+  const jsonValue = !truncated && isJson ? safeParse(body) : null
 
   const selected = (): string => {
     try {
