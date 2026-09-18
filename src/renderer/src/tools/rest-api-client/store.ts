@@ -5,6 +5,7 @@ import type { CollectionNode, Env, GroupNode, HistoryEntry, RequestModel, Reques
 
 export const HISTORY_CAP = 50
 export const HISTORY_BODY_CAP = 10 * 1024
+export const BUNDLE_VERSION = 1
 
 const uid = (): string => crypto.randomUUID()
 
@@ -173,3 +174,44 @@ export const useRestStore = create<RestState>()(
     }
   )
 )
+
+// ---- 导入/导出:整体校验后原子提交 ----
+
+/** 导出当前集合与环境为 JSON 文本;不含历史(避免把响应内容带出) */
+export function exportBundle(): string {
+  const s = useRestStore.getState()
+  return JSON.stringify({
+    version: BUNDLE_VERSION,
+    exportedAt: new Date().toISOString(),
+    collections: s.collections,
+    environments: s.environments
+  })
+}
+
+/** 校验失败不改状态;成功时按 id 合并(已存在同 id 跳过,新 id 追加) */
+export function importBundle(json: string): { ok: true } | { ok: false; reason: string } {
+  let data: unknown
+  try {
+    data = JSON.parse(json)
+  } catch {
+    return { ok: false, reason: 'invalid JSON' }
+  }
+  if (typeof data !== 'object' || data === null) return { ok: false, reason: 'bundle is not an object' }
+  const b = data as { version?: unknown; collections?: unknown; environments?: unknown }
+  if (b.version !== BUNDLE_VERSION) return { ok: false, reason: `unsupported bundle version: ${String(b.version)}` }
+  if (!Array.isArray(b.collections) || !Array.isArray(b.environments)) {
+    return { ok: false, reason: 'collections/environments must be arrays' }
+  }
+  const incoming = { collections: b.collections as GroupNode[], environments: b.environments as Env[] }
+  // 只有整体校验通过后才 set,且只 set 一次 => 原子
+  useRestStore.setState((s) => ({
+    collections: [...s.collections, ...incoming.collections.filter((c) => !findIn(s.collections, c.id))],
+    environments: [...s.environments, ...incoming.environments.filter((e) => !s.environments.some((x) => x.id === e.id))]
+  }))
+  return { ok: true }
+}
+
+/** 任一环境存在非空变量值即为真(用于导入前提示可能含密钥) */
+export function bundleHasSecrets(): boolean {
+  return useRestStore.getState().environments.some((e) => Object.values(e.vars).some((v) => v !== ''))
+}
