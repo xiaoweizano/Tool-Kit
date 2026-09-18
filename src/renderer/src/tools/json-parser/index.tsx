@@ -1,11 +1,14 @@
+import { useState } from 'react'
 import { useLiveTransform } from '@core/useLiveTransform'
+import { readDeepLink } from '@tools/rest-api-client/deep-link'
 import { CopyButton } from '@components/CopyButton'
 import { InputZone } from '@components/InputZone'
 import { TriStateOutput } from '@components/TriStateOutput'
 import { posToLineCol } from './transform'
 
 export default function JsonParserPage(): JSX.Element {
-  const { input, setInput, opts, setOpts, phase, result } = useLiveTransform<string, string>('json-parser')
+  const [seed] = useState(() => readDeepLink('json-parser'))
+  const { input, setInput, opts, setOpts, phase, result } = useLiveTransform<string, string>('json-parser', seed ?? undefined)
 
   return (
     <div className="mx-auto max-w-4xl p-6">

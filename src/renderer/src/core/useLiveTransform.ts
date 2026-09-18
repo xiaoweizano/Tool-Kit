@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ToolResult, TransformOpts } from './types'
 import { runTransform } from './transform.channel'
 
-export function useLiveTransform<I, O>(toolId: string) {
-  const [input, setInputRaw] = useState<I>('' as unknown as I)
+export function useLiveTransform<I, O>(toolId: string, initial?: I) {
+  const [input, setInputRaw] = useState<I>(initial ?? ('' as unknown as I))
   const [opts, setOpts] = useState<TransformOpts>({})
   const [phase, setPhase] = useState<'idle' | 'running' | 'done'>('idle')
   const [result, setResult] = useState<ToolResult<O> | null>(null)

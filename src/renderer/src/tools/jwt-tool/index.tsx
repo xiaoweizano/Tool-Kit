@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLiveTransform } from '@core/useLiveTransform'
+import { readDeepLink } from '@tools/rest-api-client/deep-link'
 import { CopyButton } from '@components/CopyButton'
 import { TriStateOutput } from '@components/TriStateOutput'
 import { JsonView } from '@components/JsonView'
@@ -11,7 +12,8 @@ import type { JwtResult } from './types'
 const ALL_ALGS = ['HS256','HS384','HS512','RS256','RS384','RS512','ES256','ES384','ES512','PS256','PS384','PS512']
 
 export default function JwtToolPage(): JSX.Element {
-  const { input, setInput, phase, result } = useLiveTransform<string, JwtResult>('jwt-tool')
+  const [seed] = useState(() => readDeepLink('jwt-tool'))
+  const { input, setInput, phase, result } = useLiveTransform<string, JwtResult>('jwt-tool', seed ?? undefined)
   const [secret, setSecret] = useState('')
   const [alg, setAlg] = useState('HS256')
   const [expiry, setExpiry] = useState('1h')
