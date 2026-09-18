@@ -157,6 +157,13 @@ export const useRestStore = create<RestState>()(
     }),
     {
       name: 'toolkit.rest-client',
+      // 排除 writeFailed:会话级失败标记绝不跨重启存活(避免陈旧横幅误导用户)
+      partialize: (s) => ({
+        collections: s.collections,
+        environments: s.environments,
+        activeEnvId: s.activeEnvId,
+        history: s.history
+      }),
       storage: createJSONStorage(() => ({
         getItem: (k) => storageGetRaw(k),
         setItem: (k, v) => {
