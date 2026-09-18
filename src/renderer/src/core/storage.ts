@@ -26,3 +26,8 @@ export function storageSetRaw(key: string, raw: string): void {
 export function storageRemove(key: string): void {
   try { localStorage.removeItem(key) } catch { /* 同上:静默 */ }
 }
+
+export function storageSetChecked(key: string, value: unknown): { ok: true } | { ok: false; reason: string } {
+  try { localStorage.setItem(key, JSON.stringify(value)); return { ok: true } }
+  catch (e) { return { ok: false, reason: e instanceof Error ? e.message : 'unknown' } }
+}
