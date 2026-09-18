@@ -9,6 +9,26 @@ const INVALID = (): ToolResult<RequestModel> => ({
   message: '不是有效的 cURL 命令',
 })
 
+const PS_INVALID = (): ToolResult<RequestModel> => ({
+  status: 'error',
+  kind: 'invalid-input',
+  message: '不是有效的 cURL 命令,请使用浏览器 Copy as cURL (bash)',
+})
+
+const MULTIPART = (): ToolResult<RequestModel> => ({
+  status: 'error',
+  kind: 'unsupported',
+  structure: 'multipart',
+  message: 'v1 不支持 multipart 文件上传',
+})
+
+const FILE_REF = (): ToolResult<RequestModel> => ({
+  status: 'error',
+  kind: 'unsupported',
+  structure: 'file-ref',
+  message: '不支持文件引用',
+})
+
 /**
  * Decode a single backslash escape inside a bash `$'...'` ANSI-C quoted string.
  *
@@ -161,6 +181,11 @@ export function tokenize(input: string): string[] {
 }
 
 const BODY_FLAGS = new Set(['-d', '--data', '--data-raw', '--data-binary', '--data-urlencode'])
+// Subset of body flags whose value may be `@file` (a file reference we cannot
+// honour in v1). `--data-raw`/`--data-urlencode` deliberately excluded here:
+// `--data-raw` treats `@` literally.
+const FILE_REF_FLAGS = new Set(['-d', '--data', '--data-binary'])
+const FORM_FLAGS = new Set(['-F', '--form', '--form-string'])
 const IGNORED_FLAGS = new Set(['--compressed', '-k', '--insecure', '-L', '--location'])
 
 /** Parse a Chrome/DevTools `Copy as cURL` command into a RequestModel. */
@@ -168,7 +193,15 @@ export function parseCurl(text: string): ToolResult<RequestModel> {
   const toks = tokenize(text ?? '')
   if (toks.length === 0) return INVALID()
   const cmd = (toks[0] ?? '').toLowerCase().replace(/\.exe$/, '')
-  if (cmd !== 'curl') return INVALID()
+  if (cmd !== 'curl') {
+    // PowerShell `Invoke-WebRequest` / `Invoke-RestMethod`, or PowerShell-style
+    // `-Uri`/`-Method` params on a non-curl line: steer the user to the browser.
+    const ps = toks.some(
+      (t) =>
+        /^(invoke-webrequest|invoke-restmethod|iwr|irm)$/i.test(t) || /^-(uri|method)\b/i.test(t),
+    )
+    return ps ? PS_INVALID() : INVALID()
+  }
 
   let method = ''
   let url = ''
@@ -200,8 +233,13 @@ export function parseCurl(text: string): ToolResult<RequestModel> {
     } else if (flag === '-H' || flag === '--header') {
       const raw = value()
       if (raw !== '') headers.push(header(raw))
+    } else if (FORM_FLAGS.has(flag) || t.startsWith('-F')) {
+      // Multipart upload — reject outright rather than silently dropping the body.
+      return MULTIPART()
     } else if (BODY_FLAGS.has(flag)) {
-      body = value()
+      const raw = value()
+      if (FILE_REF_FLAGS.has(flag) && raw.startsWith('@')) return FILE_REF()
+      body = raw
     } else if (flag === '-b' || flag === '--cookie') {
       headers.push(newKv('Cookie', value()))
     } else if (IGNORED_FLAGS.has(flag)) {
