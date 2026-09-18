@@ -6,6 +6,8 @@
 >
 > 统计:共 **29** 个 Scenario(tool-registry 4 / app-shell 9 / tool-ux-conventions 5 / json-parser-tool 6 / dual-output-build 5;注:brief 预估与 spec 实际条数不符,以 spec 文件实际内容为准)。
 > 已验证 ☑ 22 条(其中自动化测试 17、静态核验 5),待人工 ☐ 7 条。
+>
+> [2026-09-18 rest-api-client-tool 增量统计] 另覆盖 **46** 个 Scenario(rest-api-client 35 / net-fetch-channel 11):已验证 ☑ 46 条(自动化测试 33、静态核验 13,0 条纯待人工);其中主进程端到端与导航 NET 徽标视觉归入「待人工·桌面运行时」段人工目验。上方 29/22/7 为 toolbox-foundation 原口径,不含此增量。
 
 ## tool-registry(4 Scenario)
 
@@ -14,7 +16,7 @@
 ### Requirement: 注册表驱动导航与路由
 - [x] **新增工具后导航自动出现** — ☑ (tests/smoke/home.spec.ts「首页加载…导航渲染工具项」:导航由 register.ts 数组驱动渲染;`test/register.test.ts`「searchTools 空 query 返回全部」)
 ### Requirement: capability 声明驱动壳层适配
-- [ ] **联网工具在导航中带联网标识** — ☐ 待人工:当前注册表仅 JSON 工具(offline: true),联网标识逻辑需出现首个联网工具后人工目验
+- [ ] **联网工具在导航中带联网标识** — ☐ 待人工:注册表现含 2 个联网工具(translate、rest-api-client,均 `capability.network` 非空);NET 徽标渲染门控(`NavLink.tsx:21`、`Home.tsx:50`)已静态核验并随 translate 首点亮、rest-api-client 复证,但无自动化测试断言徽标 DOM,导航/首页徽标视觉一致性仍需人工目验(见「待人工·桌面运行时」)
 - [x] **离线工具断网后完整可用** — ☑ 静态核验:JSON 工具 capability offline: true,transform 为本地纯函数(`test/json-transform.test.ts` 12 用例绿),无任何网络请求;Web 纯度检查通过(产物无 electron/网络依赖)
 
 ## app-shell(9 Scenario)
@@ -168,6 +170,103 @@
 - [x] **CSP connect-src 放行 5 翻译域** — ☑ build:web + purity 通过
 - [~] 真实翻译联调(各引擎实 key 请求)与桌面 IPC 实测 — 待人工目验
 
+## rest-api-client(2026-09-18 · REST API 客户端 · 35 Scenario)
+
+> 第 22 个工具、第 2 个联网工具(`capability: { offline:false, network:'rest-client' }`)。三栏:侧栏 集合·环境·历史 / 请求区 / 响应区。
+> 纯函数(curl-parse/build、env-resolve、query-params、store)与封装层(http-client、httpFetch)均可单测直调;主进程 `net.fetch` 端到端(真超时/取消/跨域收发/302)属桌面运行时,见末尾「待人工·桌面运行时」段。
+
+### Requirement: 工具注册与能力声明
+- [x] **导航自动出现联网标识工具** — ☑ 静态核验:`register.ts` 追加 `id:'rest-api-client', network:'rest-client'`;导航/首页 NET 徽标由 `capability.network` 门控(`NavLink.tsx:21`、`Home.tsx:50`),与 translate 同机制点亮。徽标真实视觉待人工(无自动化测试断言徽标 DOM)
+- [x] **编译期类型接受 rest-client** — ☑ 静态核验:`core/types.ts:5` `network` 联合已含 `'rest-client'`,`pnpm typecheck` 全绿
+
+### Requirement: 请求构建器
+- [x] **编辑 headers 增删行** — ☑ 静态核验:`RequestPanel` HEADERS 表「+ Header」/删行按索引 filter 接线,发送仅含现存行
+- [x] **body JSON 格式化** — ☑ 静态核验:`RequestPanel.formatBody` 走 `JSON.parse→stringify(_,2)`,非法 JSON 显式报错不静默
+
+### Requirement: cURL 导入(bash + cmd 双方言)
+- [x] **解析 Chrome bash 格式** — ☑ (test/rest-client-curl.test.ts「解析 Chrome bash GET」「--data-raw 触发 POST + body」「ANSI-C 解码 \xNN/\t/\n」)
+- [x] **解析 Chrome cmd 格式含内嵌引号** — ☑ (test/rest-client-curl.test.ts「cmd ^" 方言 + \^" 内引号」「cmd 方言与等价 bash 结果一致」)
+- [x] **非 curl 输入明确报错** — ☑ (test/rest-client-curl.test.ts「非 curl 输入 → invalid-input」「PowerShell → invalid-input 提示 Copy as cURL (bash)」)
+- [x] **multipart 明确拒绝** — ☑ (test/rest-client-curl.test.ts「-F/--form → multipart unsupported 且不静默丢 body」)
+
+### Requirement: cURL 导出(bash 方言)
+- [x] **导出可被自身导入还原** — ☑ (test/rest-client-curl.test.ts「build→parse 语义一致」)
+
+### Requirement: 环境变量模板替换(原样,零 URL 编码)
+- [x] **baseUrl 变量不被破坏** — ☑ (test/rest-client-env.test.ts「baseUrl 值不被编码」+ test/rest-client-http.test.ts「解析变量后发送,URL 不被编码」)
+- [x] **未定义变量提示** — ☑ (test/rest-client-env.test.ts「未定义变量列出且原样保留」+ test/rest-client-http.test.ts「url 与 body 中同一未定义变量去重后返回」)
+- [x] **切换环境重发指向新环境** — ☑ (test/rest-client-env.test.ts「body/headers 同样替换」+ test/rest-client-sidebar.test.tsx「6. 编辑活动环境变量」;真实跨环境重发属桌面运行时段)
+
+### Requirement: query 参数编辑器(不经 URL/URLSearchParams)
+- [x] **拆分含变量的 query** — ☑ (test/rest-client-query.test.ts「拆分含变量,花括号不被编码」)
+- [x] **特殊字符往返不损坏** — ☑ (test/rest-client-query.test.ts「round-trip 保结构」「值含已编码内容原样保留(不 double-encode)」+ test/rest-client-ui.test.tsx「编辑 query 参数值…URL 双向同步」)
+
+### Requirement: 树形集合管理
+- [x] **新建分组并移入请求** — ☑ (test/rest-client-sidebar.test.tsx「1. +分组」「4. 移动请求到另一分组」+ test/rest-client-store.test.ts「集合树 add/remove」)
+- [x] **删除分组含子项确认** — ☑ (test/rest-client-sidebar.test.tsx「2. 删除含请求的分组 → 触发确认;取消不删,确认删除子树」)
+
+### Requirement: 多环境与活动环境
+- [x] **切换活动环境** — ☑ (test/rest-client-sidebar.test.tsx「5. +环境 首个自动 activeEnvId」「6. 编辑活动环境变量」;按所选 vars 解析由 env-resolve 保证)
+
+### Requirement: 请求历史
+- [x] **历史不存响应体且有上限** — ☑ (test/rest-client-store.test.ts「历史超 50 淘汰最旧」;HistoryEntry 响应仅存摘要 status/statusText/durationMs/sizeBytes/finalUrl,无 body)
+- [x] **大请求体截断入历史** — ☑ (test/rest-client-store.test.ts「历史 body 超 10KB 截断标 truncated」)
+- [x] **点击历史回填** — ☑ 静态核验:`index.tsx.onHistoryLoad → loadDraft(entry.request)` 回填 method/url/headers/body 模板,复用 dirty 确认
+
+### Requirement: 编辑模型:活动草稿 + 脏标记 + 切换确认
+- [x] **丢弃前确认** — ☑ (test/rest-client-ui.test.tsx「修改 URL 后 dirty=true,切换集合项触发确认(window.confirm)」+ test/rest-client-sidebar.test.tsx「8. 新增分组/环境不触发 discard 确认」)
+
+### Requirement: 响应面板
+- [x] **JSON 响应高亮** — ☑ 静态核验:`ResponsePanel` content-type/前缀命中 JSON 走 `JsonView`(其自身测试已覆盖),`CopyButton getText=()=>body` 复制全量原文
+- [x] **超大响应截断** — ☑ 静态核验:`ResponsePanel` `body.length>1MB` 走 truncated 分支(slice 预览 + 提示条,绝不整体 parse/建树)。真实 >1MB 渲染目验属桌面运行时段
+- [x] **空响应** — ☑ 静态核验:`ResponsePanel` `body===''` 显示「EMPTY · 无响应体」占位
+
+### Requirement: Web 版错误诚实标注
+- [x] **Web 无法发送时合并提示** — ☑ (test/rest-client-http.test.ts「network 类错误映射为桌面版提示文案」+ test/http-fetch.test.ts「fetch 抛 TypeError → NetFetchError(network)」)
+- [x] **HTTP 错误状态正常展示** — ☑ (test/rest-client-http.test.ts「4xx 是 ok(正常响应)」;`ResponsePanel.statusColor` 4xx/5xx → badge-error 红显)
+
+### Requirement: 跨工具深链
+- [x] **深链到 JSON 解析** — ☑ (test/rest-client-deeplink.test.ts「写后读一次即清」;`ResponsePanel.openJson → writeDeepLink('json-parser',body)` 后跳 `/tools/json-parser`)
+- [x] **JWT 深链优先选中文本** — ☑ 静态核验:`ResponsePanel.openJwt` 取 `selected() || body`,选中优先、无选中回落整个 body
+- [x] **深链载荷过大降级** — ☑ 静态核验:`deep-link.writeDeepLink` setItem try/catch 返 false,`openJwt` 捕获后降级仅传选中文本并提示,不崩
+
+### Requirement: 键盘可达发送
+- [x] **快捷键发送** — ☑ (test/rest-client-ui.test.tsx「Ctrl+Enter 发送」;发送中 `send-btn disabled={sending}` + `onKeyDown` 内 `if(!p.sending)` 双重防重)
+
+### Requirement: 集合与环境导入导出
+- [x] **导出清空后导入还原** — ☑ (test/rest-client-export.test.ts「导出清空再导入还原」「导出后清空再导入还原集合树(组+子请求)」)
+- [x] **导入损坏文件不污染** — ☑ (test/rest-client-export.test.ts「非法 bundle 不污染」「同名共存不覆盖」「重复导入同一 bundle 不产生重复条目(id 跳过)」)
+- [x] **含 token 导出警告** — ☑ (test/rest-client-export.test.ts「无任何非空环境变量时 bundleHasSecrets 为 false」;明文 token 导出 UI 警告弹窗目验属桌面运行时段)
+
+### Requirement: 存储写失败可见
+- [x] **配额溢出可见** — ☑ (test/rest-client-store.test.ts「持久化底层写失败时标记 writeFailed」「写失败标记」+ test/storage-checked.test.ts「setItem 抛错返回 ok:false 且带 reason」;顶部 `role=alert` 警告见 index.tsx)
+- [x] **既有静默行为不变** — ☑ (test/storage-checked.test.ts 新增独立 `storageSetChecked`;既有 `storageSet` 静默行为未改,test/storage.test.ts 全绿,前 21 工具零回归)
+
+## net-fetch-channel(2026-09-18 · 一次性网络通道增强 · 11 Scenario)
+
+> 主进程 `net.fetch` 通道:requestId 关联取消、可配超时、失败以 `{__fail:true,kind}` 结构化返回、响应带回 headers/bodyBytes/finalUrl。渲染层可测逻辑(classifyFetchError/computeBodyBytes/超时默认值/httpFetch 封装/http-client)已单测直调;真实主进程 `net.fetch` 中止、跨域收发、302 属桌面运行时,见末尾桌面段。
+
+### Requirement: 一次性请求携带 requestId 与可配置超时
+- [x] **桌面请求在超时时中止** — ☑ 静态核验:`net-channel.classifyFetchError` 将 TimeoutError 归 `timeout`(test/net-channel.test.ts「TimeoutError → timeout」);主进程 `AbortSignal.timeout(ms)` 真中止属桌面运行时段
+- [x] **未传 timeoutMs 用默认 15s** — ☑ (test/net-channel.test.ts「DEFAULT_TIMEOUT_MS=15000」)
+
+### Requirement: 在途请求可取消
+- [x] **用户取消在途请求** — ☑ (test/http-fetch.test.ts「手动取消 → aborted(不误判为 timeout)」+ test/rest-client-http.test.ts「有在途请求时调用 httpCancel(当前 requestId)」;主进程 `AbortController.abort` 真中断 net.fetch 属桌面运行时段)
+- [x] **取消已完成的请求是空操作** — ☑ (test/rest-client-http.test.ts「无在途请求时不调用 httpCancel」)
+- [x] **组件卸载触发取消** — ☑ 静态核验:`index.tsx` 卸载 cleanup 副作用调 `cancelCurrent()`;真实中断属桌面运行时段
+
+### Requirement: 错误分类以主进程为唯一来源
+- [x] **网络不可达归类为 network** — ☑ (test/net-channel.test.ts「普通 TypeError(Failed to fetch) → network」+ test/http-fetch.test.ts「fetch 抛 TypeError → NetFetchError(network)」)
+- [x] **4xx 响应不是失败** — ☑ (test/rest-client-http.test.ts「4xx 是 ok(正常响应)」)
+- [x] **主动取消区别于超时** — ☑ (test/net-channel.test.ts「AbortError+user-cancel → aborted」vs「TimeoutError → timeout」,kind 不混淆)
+
+### Requirement: 响应返回头/字节大小/最终 URL
+- [x] **重定向暴露最终 URL** — ☑ (test/http-fetch.test.ts「成功返回 headers/bodyBytes/finalUrl」字段透传;真实 302 跟随最终 URL 属桌面运行时段)
+- [x] **无 Content-Length 按字节计** — ☑ (test/net-channel.test.ts「缺失按 UTF-8 字节数(中文 3 字节)」「优先 Content-Length」)
+
+### Requirement: 向后兼容既有调用方(translate)
+- [x] **translate 旧式调用不受影响** — ☑ 静态核验:`httpFetch` 不传 requestId 仍返 `{ok,status,body}` 子集,translate 既有 test/translate-engines/hook/keys 全绿(零回归)
+
 ## 验证记录(tools 11-12 批次 2026-08-26)
 
 - `pnpm test`:28 文件 / 217 用例全部通过
@@ -178,12 +277,31 @@
 - `pnpm test`:23 文件 / 140 用例全部通过(10 工具全绿)
 - `pnpm lint` / `pnpm typecheck` / `pnpm build:web` / `node scripts/check-web-purity.mjs`:全绿(新增库均无 electron 引用)
 
-## 待人工项汇总(7 条)
+## 验证记录(rest-api-client + net-fetch-channel 批次 2026-09-18)
 
-1. 联网标识(tool-registry:待首个联网工具落地)
+- `pnpm test`:51 文件 / **438** 用例全部通过(前 21 工具零回归;新增 rest-client-* 系列 + net-channel + http-fetch + storage-checked 全绿)
+- `pnpm typecheck` / `pnpm lint`:全绿
+- `pnpm build:web` + `node scripts/check-web-purity.mjs dist/web`:web purity OK
+- Web CSP 放宽:构建产物 `dist/web/index.html` 含 `connect-src *`(经 `scripts/copy-web.mjs` 复制后改写,并带失败即抛守卫);桌面 `out/renderer/index.html` 逐域白名单原样保留(translate/DeepL/有道等域仍在),CSP 未被触碰
+
+## 待人工项汇总
+
+### 既有(foundation 7 条)
+
+1. 联网标识导航徽标(tool-registry):已由 translate + rest-api-client 双联网工具点亮 `capability.network` 门控、静态核验;导航/首页徽标**视觉**目验并入下方桌面运行时段第 12 条
 2. 主题切换即时视觉生效(app-shell)
 3. 整体中文文案目验(app-shell)
 4. 首页搜索回车直达(app-shell)
 5. 设置页色卡与主题选择器一致性(app-shell)
 6. 一键复制剪贴板反馈(tool-ux-conventions)
 7. 双端同屏 dev + 桌面安装首跑,含 SmartScreen/右键打开指引核对(dual-output-build)
+
+### 待人工·桌面运行时(rest-api-client / net-fetch-channel,2026-09-18)
+
+> 以下属真实 Electron 主进程 / 浏览器运行时行为,单元层已测纯逻辑与分类,端到端需桌面手动目验(对应 brief Step 5)。
+
+8. 主进程端到端:真实超时(默认 15s / UI 可选 5·10·15·30·60s)中止、`net-cancel` 真中断在途 `net.fetch`、组件卸载中断、302 重定向暴露 finalUrl、跨域/内网无 CORS 接口收发
+9. 界面级:cURL 双方言粘贴导入、切换活动环境后 URL/headers 随 vars 变化、深链跳转 JSON/JWT 目标页填入并清键、含明文 token 导出警告弹窗
+10. 响应面板渲染:JSON 高亮树、>1MB 截断预览不冻结且提示「复制/深链用全量」、空响应 EMPTY 占位、4xx/5xx 红显真实响应
+11. 深链过大降级路径(setItem 抛 quota → 仅传选中文本)真实配额触发
+12. 导航/首页 NET 徽标视觉:translate + rest-api-client 两联网工具均显示徽标、离线工具无徽标(承接第 1 条目验)

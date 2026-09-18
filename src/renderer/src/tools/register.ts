@@ -21,6 +21,7 @@ import { LogAnalyzerIcon } from '@tools/log-analyzer/icon'
 import { DockerIcon } from '@tools/docker-tools/icon'
 import { NginxIcon } from '@tools/nginx-generator/icon'
 import { JvmIcon } from '@tools/jvm-params/icon'
+import { RestApiClientIcon } from '@tools/rest-api-client/icon'
 
 // lazy 放在 register.ts 而非页面 index.tsx,避免页面自引用自身模块的循环导入
 const JsonParserPage = lazy(() => import('@tools/json-parser'))
@@ -44,6 +45,7 @@ const LogAnalyzerPageLazy = lazy(() => import('@tools/log-analyzer'))
 const DockerToolsPageLazy = lazy(() => import('@tools/docker-tools'))
 const NginxGeneratorPageLazy = lazy(() => import('@tools/nginx-generator'))
 const JvmParamsPageLazy = lazy(() => import('@tools/jvm-params'))
+const RestApiClientPageLazy = lazy(() => import('@tools/rest-api-client'))
 
 // 加一个工具 = 在此数组追加一行(实现接口 + 目录),导航/路由自动生效
 export const tools: ToolDescriptor[] = [
@@ -151,6 +153,11 @@ export const tools: ToolDescriptor[] = [
     id: 'jvm-params', name: 'JVM 参数', icon: JvmIcon,
     route: '/tools/jvm-params', component: JvmParamsPageLazy,
     capability: { offline: true }
+  },
+  {
+    id: 'rest-api-client', name: 'REST 客户端', icon: RestApiClientIcon,
+    route: '/tools/rest-api-client', component: RestApiClientPageLazy,
+    capability: { offline: false, network: 'rest-client' }
   }
 ]
 
