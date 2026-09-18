@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyFetchError, computeBodyBytes, NetFetchError, DEFAULT_TIMEOUT_MS } from '@core/net-channel'
+import { classifyFetchError, computeBodyBytes, DEFAULT_TIMEOUT_MS } from '@core/net-channel'
 
 describe('classifyFetchError', () => {
   it('AbortError+user-cancel → aborted', () => {

@@ -17,7 +17,7 @@ export function classifyFetchError(err: unknown): NetFetchError {
   const name = e?.name ?? ''
   const message = e?.message ?? String(err)
   if (name === 'TimeoutError' || /timeout/i.test(message)) return new NetFetchError('timeout', message)
-  if (name === 'AbortError') return /user-cancel|cancel/i.test(message) ? new NetFetchError('aborted', message) : new NetFetchError('aborted', message)
+  if (name === 'AbortError') return new NetFetchError('aborted', message)
   if (name === 'TypeError' || /network|failed to fetch|enotfound|econnrefused/i.test(message)) return new NetFetchError('network', message)
   return new NetFetchError('other', message)
 }
