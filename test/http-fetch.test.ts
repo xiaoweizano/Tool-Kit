@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { httpFetch } from '@core/http'
+import { httpFetch, httpCancel } from '@core/http'
 import { NetFetchError } from '@core/net-channel'
 
 beforeEach(() => { vi.restoreAllMocks() })
@@ -25,5 +25,14 @@ describe('httpFetch (web path)', () => {
     const spy = vi.fn(async () => new Response(''))
     vi.stubGlobal('fetch', spy)
     await httpFetch('http://x'); expect(spy).toHaveBeenCalled()
+  })
+  it('手动取消 → aborted(不误判为 timeout)', async () => {
+    vi.stubGlobal('fetch', vi.fn((_u: string, init: { signal: AbortSignal }) =>
+      new Promise((_res, rej) => {
+        init.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' })))
+      })))
+    const p = httpFetch('http://x', undefined, { requestId: 'req-cancel', timeoutMs: 15000 })
+    httpCancel('req-cancel')
+    await expect(p).rejects.toMatchObject({ kind: 'aborted' })
   })
 })

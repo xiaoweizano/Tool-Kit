@@ -31,7 +31,12 @@ export async function httpFetch(url: string, init?: NetFetchInit, extra?: NetFet
     const body = await res.text()
     return { ok: true, status: res.status, statusText: res.statusText, headers: normalizeHeaders(res.headers), body, bodyBytes: computeBodyBytes(res.headers.get('content-length'), body), finalUrl: res.url || url }
   } catch (e) {
-    if (ctrl.signal.aborted) throw new NetFetchError('timeout', 'timeout')
+    // 超时与手动取消都会置 signal.aborted;用 abort reason 区分
+    if (ctrl.signal.aborted) {
+      throw ctrl.signal.reason === 'user-cancel'
+        ? new NetFetchError('aborted', 'aborted')
+        : new NetFetchError('timeout', 'timeout')
+    }
     throw classifyFetchError(e)
   } finally {
     clearTimeout(timer); if (extra?.requestId) webAborts.delete(extra?.requestId)
