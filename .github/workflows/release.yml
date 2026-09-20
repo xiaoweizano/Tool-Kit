@@ -15,6 +15,7 @@ jobs:
         run: echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
       - run: pnpm install --frozen-lockfile
       - name: Update package version from tag
+        shell: bash
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           npm version $VERSION --no-git-tag-version
