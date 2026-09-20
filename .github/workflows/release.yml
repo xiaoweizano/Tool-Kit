@@ -14,6 +14,10 @@ jobs:
       - name: Set Electron mirror (China-friendly)
         run: echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
       - run: pnpm install --frozen-lockfile
+      - name: Update package version from tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          npm version $VERSION --no-git-tag-version
       - name: Regenerate platform icons from SVG
         run: pnpm icons
       - run: pnpm build:desktop
@@ -31,6 +35,10 @@ jobs:
       - name: Set Electron mirror (China-friendly)
         run: echo "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/" >> $GITHUB_ENV
       - run: pnpm install --frozen-lockfile
+      - name: Update package version from tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          npm version $VERSION --no-git-tag-version
       - name: Regenerate platform icons from SVG
         run: pnpm icons
       - run: pnpm build:desktop
