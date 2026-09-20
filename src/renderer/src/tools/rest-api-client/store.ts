@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { storageGetRaw, storageRemove, storageSetChecked } from '@core/storage'
-import type { CollectionNode, Env, GroupNode, HistoryEntry, RequestModel, RequestNode } from './types'
+import type { CollectionNode, Env, GroupNode, HistoryEntry, HistoryEntryInput, HistoryRequest, RequestModel, RequestNode } from './types'
 
 export const HISTORY_CAP = 50
 export const HISTORY_BODY_CAP = 10 * 1024
@@ -82,9 +82,11 @@ function containsId(children: CollectionNode[], id: string): boolean {
   return false
 }
 
-/** 历史快照只存请求模板,body 超限截断(不存响应体) */
-function truncate(m: RequestModel): RequestModel {
-  return m.body.length > HISTORY_BODY_CAP ? { ...m, body: m.body.slice(0, HISTORY_BODY_CAP) } : m
+/** 历史快照只存请求模板,body 超限截断(不存响应体);截断 MUST 标记 truncated,回放时与完整 body 可区分 */
+function truncate(m: RequestModel): HistoryRequest {
+  return m.body.length > HISTORY_BODY_CAP
+    ? { ...m, body: m.body.slice(0, HISTORY_BODY_CAP), truncated: true }
+    : { ...m, truncated: false }
 }
 
 interface RestState {
@@ -103,7 +105,7 @@ interface RestState {
   setEnvVars: (id: string, vars: Record<string, string>) => void
   deleteEnv: (id: string) => void
   setActiveEnv: (id: string) => void
-  pushHistory: (entry: HistoryEntry) => void
+  pushHistory: (entry: HistoryEntryInput) => void
   markWriteFailed: () => void
 }
 

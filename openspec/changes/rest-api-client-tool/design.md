@@ -81,7 +81,7 @@
 - body 文本 `> 1MB` → 显示截断 + 「仅显示前 1MB,复制/深链用全量」提示;JSON 智能检测命中则复用 `components/JsonView` 高亮。空/无 body → EMPTY 态。
 
 ### D10. CSP / 分发
-- Web 产物 `vite.web.config.ts` 加 `transformIndexHtml` 把 `connect-src` 放宽为 `*`;桌面 CSP 不动。CI(GitHub Actions 双通道)与版本发布(tag 自动携带)已覆盖,无新增分发。
+- Web 产物把 `connect-src` 放宽为 `*`(CEO 批准的取舍:放宽作用于整个 origin 而非逐域白名单),规则单一来源为 `scripts/relax-csp.mjs`(指令缺失即抛错,双端共享)。落地路径分两条:`build:web` = `electron-vite build` + `scripts/copy-web.mjs`(改写 `dist/web/index.html`——这是发布产物的真正路径);`dev:web` = `vite.web.config.ts` 的 `transformIndexHtml`(仅覆盖 dev,不参与构建产物)。桌面 CSP 不动。CI(GitHub Actions 双通道)与版本发布(tag 自动携带)已覆盖,无新增分发。
 
 ## Risks / Trade-offs
 
@@ -96,7 +96,7 @@
 ## Migration Plan
 
 - 纯新增工具 + 向后兼容的网络层扩展,无 DB、无破坏性数据变更。
-- 部署:随现有 CI 构建并入下一 tag;Web 版经 `transformIndexHtml` 自动产放宽 CSP 的 index。
+- 部署:随现有 CI 构建并入下一 tag;Web 版构建经 `scripts/copy-web.mjs`(dev:web 经 `vite.web.config.ts`)产放宽 CSP 的 index。
 - 回滚:`git revert` 本 change 提交即移除工具与扩展(无残留迁移);net-fetch 扩展因向后兼容,单独 revert HTTP 通道亦不破坏 translate。
 
 ## Open Questions

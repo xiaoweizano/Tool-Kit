@@ -3,14 +3,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTranslate } from '@core/useTranslate'
 
-vi.mock('@core/http', () => ({
-  httpFetch: async (url: string) => {
-    if (url.includes('slow')) await new Promise(() => undefined as never) // 永不返回,测超时
-    if (url.includes('fail')) return { ok: false, status: 500, body: 'err' }
-    const q = /q=([^&]+)/.exec(url)?.[1] ?? ''
-    return { ok: true, status: 200, body: JSON.stringify({ responseStatus: 200, responseData: { translatedText: `T:${decodeURIComponent(q)}` } }) }
+// 契约对齐:httpFetch 传输失败是 throw(NetFetchError),HTTP 4xx/5xx 才是返回值(ok 恒为 true);
+// mock 必须以 reject 模拟传输失败,green-testing {ok:false} 会放过真实错误路径
+vi.mock('@core/http', async () => {
+  const { NetFetchError } = await import('@core/net-channel')
+  return {
+    httpFetch: async (url: string) => {
+      if (url.includes('slow')) await new Promise(() => undefined as never) // 永不返回,测超时
+      if (url.includes('fail')) throw new NetFetchError('network', 'Failed to fetch')
+      const q = /q=([^&]+)/.exec(url)?.[1] ?? ''
+      return { ok: true, status: 200, body: JSON.stringify({ responseStatus: 200, responseData: { translatedText: `T:${decodeURIComponent(q)}` } }) }
+    }
   }
-}))
+})
 
 describe('useTranslate', () => {
   beforeEach(() => vi.useRealTimers())

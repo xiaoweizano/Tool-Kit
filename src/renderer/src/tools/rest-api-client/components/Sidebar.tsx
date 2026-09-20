@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useRestStore } from '../store'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { bundleHasSecrets, exportBundle, importBundle, useRestStore } from '../store'
 import type { CollectionNode, Env, GroupNode, HistoryEntry, RequestNode } from '../types'
 
 interface Props {
@@ -22,6 +22,8 @@ export function Sidebar(p: Props): JSX.Element {
   const [selectedParentId, setSelectedParentId] = useState('')
   const [newKey, setNewKey] = useState('')
   const [newVal, setNewVal] = useState('')
+  const [bundleMsg, setBundleMsg] = useState('')
+  const importInputRef = useRef<HTMLInputElement>(null)
 
   // 移动目标 = 树中所有分组(递归展平),排除当前正在移动的行由 select 逻辑兜底
   const moveTargets = collectGroups(p.collections)
@@ -87,6 +89,27 @@ export function Sidebar(p: Props): JSX.Element {
     const rest = { ...activeEnv.vars }
     delete rest[key]
     useRestStore.getState().setEnvVars(activeEnv.id, rest)
+  }
+
+  // 导出前必查明文密钥:有则显式警告(可取消),绝不静默把 token 带出文件
+  const onBundleExport = (): void => {
+    if (bundleHasSecrets() && !window.confirm('导出文件含明文 token(环境变量值),请妥善保管。仍要导出吗?')) return
+    const blob = new Blob([exportBundle()], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `toolkit-rest-client-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const onBundleFile = async (f: File): Promise<void> => {
+    const text = await f.text()
+    const r = importBundle(text)
+    // 校验失败必须把原因展示给用户,不静默;成功给一行确认
+    setBundleMsg(r.ok ? '导入成功:集合与环境已按 id 合并' : `导入失败:${r.reason}`)
   }
 
   return (
@@ -222,6 +245,45 @@ export function Sidebar(p: Props): JSX.Element {
         ))}
       </div>
 
+      <div>
+        <div className="mb-1 font-mono text-[11px] tracking-widest text-neutral">BUNDLE · 导入 / 导出</div>
+        <div className="flex gap-1">
+          <button
+            data-testid="bundle-export-btn"
+            className="btn btn-xs btn-ghost"
+            title="导出集合与环境为 JSON 文件(含环境变量明文值)"
+            onClick={onBundleExport}
+          >
+            导出
+          </button>
+          <button
+            data-testid="bundle-import-btn"
+            className="btn btn-xs btn-ghost"
+            title="从 JSON 文件导入集合与环境(按 id 合并)"
+            onClick={() => importInputRef.current?.click()}
+          >
+            导入
+          </button>
+          <input
+            ref={importInputRef}
+            data-testid="bundle-import-input"
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) void onBundleFile(f)
+              e.target.value = '' // 允许重复选择同一文件再次触发 change
+            }}
+          />
+        </div>
+        {bundleMsg && (
+          <div data-testid="bundle-import-notice" className="mt-1 break-all font-mono text-[11px] text-info">
+            {bundleMsg}
+          </div>
+        )}
+      </div>
+
       <div className="min-h-0 flex-1">
         <div className="mb-1 font-mono text-[11px] tracking-widest text-neutral">HISTORY · 历史</div>
         {p.history.length === 0 && <div className="font-mono text-[11px] text-neutral">暂无历史</div>}
@@ -235,6 +297,11 @@ export function Sidebar(p: Props): JSX.Element {
               >
                 <span className={`font-bold ${h.response.status >= 400 ? 'text-error' : 'text-success'}`}>{h.request.method}</span>
                 <span className="min-w-0 flex-1 truncate text-left">{h.request.url}</span>
+                {h.request.truncated && (
+                  <span className="badge badge-warning badge-xs shrink-0" title="该历史 body 已截断至 10KB,回发前请核对完整内容">
+                    已截断
+                  </span>
+                )}
               </button>
             </li>
           ))}

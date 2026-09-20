@@ -45,8 +45,9 @@ export function useTranslate(): {
       if (t === '') return ''
       try {
         const req = await engine.buildRequest(t, a.from, a.to, keys)
+        // httpFetch 契约:传输失败直接 throw(NetFetchError),HTTP 4xx/5xx 是正常返回;
+        // 两种失败都落入下方 catch,包成带行号的 EngineParseError
         const res = await httpFetch(req.url, req.init as never)
-        if (!res.ok) throw new EngineParseError(`HTTP ${res.status}`)
         return parseEngineResponse(engine.id, JSON.parse(res.body))
       } catch (e) {
         throw new EngineParseError(`第 ${i + 1} 行翻译失败:${(e as Error).message}`)

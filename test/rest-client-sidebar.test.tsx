@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
-import { render, fireEvent, screen, cleanup } from '@testing-library/react'
+import { render, fireEvent, screen, cleanup, act } from '@testing-library/react'
 import RestApiClientPage from '@tools/rest-api-client'
 import { useRestStore } from '@tools/rest-api-client/store'
 
@@ -149,5 +149,95 @@ describe('rest client sidebar CRUD', () => {
       .getState()
       .collections.flatMap((g) => g.children.map((n) => n.name))
     expect(reqNames).toContain('迁移后的请求')
+  })
+})
+
+describe('bundle 导入/导出 UI + 历史「已截断」徽标', () => {
+  // jsdom 不实现 Blob URL:最小 stub,真实断言落在导出内容与 store 转变上
+  const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:mock-url')
+  const revokeObjectURL = vi.fn()
+  beforeEach(() => {
+    Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, configurable: true, writable: true })
+    Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, configurable: true, writable: true })
+    createObjectURL.mockClear()
+    revokeObjectURL.mockClear()
+  })
+
+  it('11. 导出:含明文环境变量时先弹「明文 token」警告,确认后下载 exportBundle 内容', async () => {
+    useRestStore.getState().addEnv('dev')
+    useRestStore.getState().setEnvVars(useRestStore.getState().environments[0].id, { tk: 'secret-token' })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<RestApiClientPage />)
+    fireEvent.click(screen.getByTestId('bundle-export-btn'))
+    // 警告必须触发且点名明文 token(spec scenario: 含 token 导出警告)
+    expect(confirmSpy).toHaveBeenCalledOnce()
+    expect(String(confirmSpy.mock.calls[0][0])).toContain('明文 token')
+    // 下载内容 = exportBundle() 的 JSON(含该明文值),而非空壳
+    expect(createObjectURL).toHaveBeenCalledOnce()
+    const blob = createObjectURL.mock.calls[0][0]
+    const text = await blob.text()
+    expect(JSON.parse(text)).toMatchObject({ version: 1 })
+    expect(text).toContain('secret-token')
+    expect(clickSpy).toHaveBeenCalledOnce()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')
+  })
+
+  it('12. 导出:警告弹窗点取消 → 不下载(store 不受影响)', () => {
+    useRestStore.getState().addEnv('dev')
+    useRestStore.getState().setEnvVars(useRestStore.getState().environments[0].id, { tk: 'secret' })
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<RestApiClientPage />)
+    fireEvent.click(screen.getByTestId('bundle-export-btn'))
+    expect(createObjectURL).not.toHaveBeenCalled()
+    expect(clickSpy).not.toHaveBeenCalled()
+    expect(useRestStore.getState().environments.length).toBe(1)
+  })
+
+  it('13. 导入:合法 bundle 填充 store 并提示导入成功', async () => {
+    render(<RestApiClientPage />)
+    const bundle = JSON.stringify({
+      version: 1,
+      exportedAt: '2026-09-20T00:00:00.000Z',
+      collections: [{ id: 'imp-group-1', type: 'group', name: '导入组', children: [] }],
+      environments: [{ id: 'imp-env-1', name: 'qa', vars: { tk: 'v' } }]
+    })
+    const file = new File([bundle], 'bundle.json', { type: 'application/json' })
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('bundle-import-input'), { target: { files: [file] } })
+    })
+    // 真实 store 转变,不是 mock 被调用
+    expect(useRestStore.getState().collections.some((c) => c.id === 'imp-group-1')).toBe(true)
+    expect(useRestStore.getState().environments.some((e) => e.id === 'imp-env-1')).toBe(true)
+    expect(screen.getByTestId('bundle-import-notice').textContent).toContain('导入成功')
+  })
+
+  it('14. 导入:非法 bundle 显示原因且 store 保持原状(不静默失败)', async () => {
+    useRestStore.getState().addEnv('keep')
+    render(<RestApiClientPage />)
+    const bad = JSON.stringify({ version: 999, collections: [], environments: [] })
+    const file = new File([bad], 'bad.json', { type: 'application/json' })
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('bundle-import-input'), { target: { files: [file] } })
+    })
+    const notice = screen.getByTestId('bundle-import-notice').textContent ?? ''
+    expect(notice).toContain('导入失败')
+    expect(notice).toContain('unsupported bundle version: 999')
+    // 原子性:现有数据一条不少
+    expect(useRestStore.getState().environments.map((e) => e.name)).toEqual(['keep'])
+    expect(useRestStore.getState().collections.length).toBe(0)
+  })
+
+  it('15. 历史 body 截断条目显示「已截断」徽标(截断可见,不静默)', () => {
+    useRestStore.getState().pushHistory({
+      id: 'h1',
+      request: { method: 'POST', url: '/u', headers: [], body: 'x'.repeat(20000) },
+      response: { status: 200, statusText: 'OK', durationMs: 1, sizeBytes: 1, finalUrl: 'u' },
+      envName: '',
+      at: 1
+    })
+    render(<RestApiClientPage />)
+    expect(screen.getByText('已截断')).toBeTruthy()
   })
 })

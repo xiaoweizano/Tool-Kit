@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { JsonView } from '@components/JsonView'
 import { CopyButton } from '@components/CopyButton'
 import { writeDeepLink } from '../deep-link'
-import type { ResponseModel } from '../types'
+import type { ResponseModel, UiError } from '../types'
 
 const MB = 1024 * 1024
 
 interface Props {
   response: ResponseModel | null
-  error: string | null
+  error: UiError | null
   sending: boolean
   onCancel: () => void
 }
@@ -30,8 +30,8 @@ export function ResponsePanel({ response, error, sending, onCancel }: Props): JS
     return (
       <section className="flex w-2/5 min-w-0 flex-col border border-error/60 bg-base-200/40">
         <div role="alert" className="p-4">
-          <span className="font-mono text-sm text-error">✕ 请求失败</span>
-          <p className="mt-1 text-sm">{error}</p>
+          <span className="font-mono text-sm text-error">✕ {error.title}</span>
+          <p className="mt-1 text-sm">{error.message}</p>
         </div>
       </section>
     )
@@ -86,9 +86,14 @@ export function ResponsePanel({ response, error, sending, onCancel }: Props): JS
     if (sel && writeDeepLink('jwt-tool', sel)) {
       setNotice('载荷过大,已降级为仅传递选中文本')
       goto('/tools/jwt-tool')
-    } else {
-      setNotice('载荷过大且无选中文本,无法深链传递(请使用「复制」)')
+      return
     }
+    // 文案如实区分两种原因:有选中(写它也超配额)与无选中
+    setNotice(
+      sel
+        ? '响应过大且选中文本也超出配额,无法深链传递(请使用「复制」)'
+        : '载荷过大且无选中文本,无法深链传递(请使用「复制」)'
+    )
   }
 
   const statusClass = statusColor(response.status)

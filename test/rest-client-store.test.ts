@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useRestStore, HISTORY_CAP, HISTORY_BODY_CAP } from '@tools/rest-api-client/store'
-import type { HistoryEntry } from '@tools/rest-api-client/types'
+import type { HistoryEntryInput } from '@tools/rest-api-client/types'
 
 beforeEach(() => {
   localStorage.clear()
@@ -8,7 +8,7 @@ beforeEach(() => {
 })
 
 const big = (n: number) => 'x'.repeat(n)
-const entry = (at: number, body = ''): HistoryEntry => ({
+const entry = (at: number, body = ''): HistoryEntryInput => ({
   id: 'h' + at,
   request: { method: 'GET', url: 'u', headers: [], body },
   response: { status: 200, statusText: '', durationMs: 1, sizeBytes: 1, finalUrl: 'u' },
@@ -27,6 +27,14 @@ describe('rest store', () => {
   it('历史 body 超 10KB 截断标 truncated', () => {
     useRestStore.getState().pushHistory(entry(1, big(20000)))
     expect(useRestStore.getState().history[0].request.body.length).toBe(HISTORY_BODY_CAP)
+    // 截断 MUST 打标:回放时截断快照与完整 body 可区分(不静默)
+    expect(useRestStore.getState().history[0].request.truncated).toBe(true)
+  })
+  it('历史 body 未超限 truncated 为 false', () => {
+    useRestStore.getState().pushHistory(entry(1, 'short-body'))
+    const h = useRestStore.getState().history[0]
+    expect(h.request.body).toBe('short-body')
+    expect(h.request.truncated).toBe(false)
   })
   it('集合树 add/remove', () => {
     const s = useRestStore.getState()

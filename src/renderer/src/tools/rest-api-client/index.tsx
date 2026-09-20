@@ -6,7 +6,7 @@ import { parseCurl } from './curl-parse'
 import { Sidebar } from './components/Sidebar'
 import { RequestPanel } from './components/RequestPanel'
 import { ResponsePanel } from './components/ResponsePanel'
-import type { Env, HistoryEntry, RequestModel, RequestNode, ResponseModel } from './types'
+import type { Env, HistoryEntry, RequestModel, RequestNode, ResponseModel, UiError } from './types'
 
 const EMPTY_REQUEST: RequestModel = { method: 'GET', url: '', headers: [], body: '' }
 
@@ -36,7 +36,7 @@ export default function RestApiClientPage(): JSX.Element {
   const [timeoutSec, setTimeoutSec] = useState(15)
   const [sending, setSending] = useState(false)
   const [response, setResponse] = useState<ResponseModel | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<UiError | null>(null)
 
   const env: Env | undefined = environments.find((e) => e.id === activeEnvId)
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline)
@@ -115,7 +115,7 @@ export default function RestApiClientPage(): JSX.Element {
         })
       } else {
         setResponse(null)
-        setError(res.message)
+        setError({ title: '请求失败', message: res.message })
       }
     })
   }, [draft, env, sending, timeoutSec, pushHistory])
@@ -129,7 +129,8 @@ export default function RestApiClientPage(): JSX.Element {
         loadDraft(r.data, r.data.url || 'cURL 导入')
         setError(null)
       } else {
-        setError(`cURL 导入失败:${r.message}`)
+        // 粘贴解析失败 ≠ 请求失败:标题区分,不把导入错误伪装成请求错误
+        setError({ title: '导入失败', message: `cURL 解析失败:${r.message}` })
         setResponse(null)
       }
     },

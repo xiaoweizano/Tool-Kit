@@ -8,6 +8,7 @@
 > 已验证 ☑ 22 条(其中自动化测试 17、静态核验 5),待人工 ☐ 7 条。
 >
 > [2026-09-18 rest-api-client-tool 增量统计] 另覆盖 **46** 个 Scenario(rest-api-client 35 / net-fetch-channel 11):已验证 ☑ 46 条(自动化测试 33、静态核验 13,0 条纯待人工);其中主进程端到端与导航 NET 徽标视觉归入「待人工·桌面运行时」段人工目验。上方 29/22/7 为 toolbox-foundation 原口径,不含此增量。
+> [2026-09-20 final-fix 增量] 补齐 bundle 导入/导出 UI 接线(jsdom 5 用例:token 警告/取消/合法导入/非法导入/截断徽标)、历史截断 `truncated` 标记(store 断言 + 侧栏徽标);原「静态核验/目验」的含 token 警告条目升级为自动化覆盖,引用见各条;CSP 放宽规则收敛为单一来源 `scripts/relax-csp.mjs`。
 
 ## tool-registry(4 Scenario)
 
@@ -210,7 +211,7 @@
 
 ### Requirement: 请求历史
 - [x] **历史不存响应体且有上限** — ☑ (test/rest-client-store.test.ts「历史超 50 淘汰最旧」;HistoryEntry 响应仅存摘要 status/statusText/durationMs/sizeBytes/finalUrl,无 body)
-- [x] **大请求体截断入历史** — ☑ (test/rest-client-store.test.ts「历史 body 超 10KB 截断标 truncated」)
+- [x] **大请求体截断入历史** — ☑ (test/rest-client-store.test.ts「历史 body 超 10KB 截断标 truncated」断言长度=10KB 且快照 `truncated=true`;「历史 body 未超限 truncated 为 false」;侧栏「已截断」徽标见 test/rest-client-sidebar.test.tsx「15. 历史 body 截断条目显示『已截断』徽标」,回放时截断与完整 body 可区分)
 - [x] **点击历史回填** — ☑ 静态核验:`index.tsx.onHistoryLoad → loadDraft(entry.request)` 回填 method/url/headers/body 模板,复用 dirty 确认
 
 ### Requirement: 编辑模型:活动草稿 + 脏标记 + 切换确认
@@ -234,9 +235,9 @@
 - [x] **快捷键发送** — ☑ (test/rest-client-ui.test.tsx「Ctrl+Enter 发送」;发送中 `send-btn disabled={sending}` + `onKeyDown` 内 `if(!p.sending)` 双重防重)
 
 ### Requirement: 集合与环境导入导出
-- [x] **导出清空后导入还原** — ☑ (test/rest-client-export.test.ts「导出清空再导入还原」「导出后清空再导入还原集合树(组+子请求)」)
-- [x] **导入损坏文件不污染** — ☑ (test/rest-client-export.test.ts「非法 bundle 不污染」「同名共存不覆盖」「重复导入同一 bundle 不产生重复条目(id 跳过)」)
-- [x] **含 token 导出警告** — ☑ (test/rest-client-export.test.ts「无任何非空环境变量时 bundleHasSecrets 为 false」;明文 token 导出 UI 警告弹窗目验属桌面运行时段)
+- [x] **导出清空后导入还原** — ☑ (test/rest-client-export.test.ts「导出清空再导入还原」「导出后清空再导入还原集合树(组+子请求)」;UI 接线见 test/rest-client-sidebar.test.tsx「13. 导入:合法 bundle 填充 store 并提示导入成功」——侧栏 BUNDLE 导入/导出按钮已接 exportBundle/importBundle)
+- [x] **导入损坏文件不污染** — ☑ (test/rest-client-export.test.ts「非法 bundle 不污染」「同名共存不覆盖」「重复导入同一 bundle 不产生重复条目(id 跳过)」;UI 层见 test/rest-client-sidebar.test.tsx「14. 导入:非法 bundle 显示原因且 store 保持原状(不静默失败)」——reason 经 bundle-import-notice 展示)
+- [x] **含 token 导出警告** — ☑ (test/rest-client-sidebar.test.tsx「11. 导出:含明文环境变量时先弹『明文 token』警告,确认后下载 exportBundle 内容」——bundleHasSecrets 命中即弹确认且确认文案含「明文 token」,确认后 Blob 内容含明文值并 revoke;「12. 导出:警告弹窗点取消 → 不下载」;store 纯函数侧见 test/rest-client-export.test.ts「无任何非空环境变量时 bundleHasSecrets 为 false」)
 
 ### Requirement: 存储写失败可见
 - [x] **配额溢出可见** — ☑ (test/rest-client-store.test.ts「持久化底层写失败时标记 writeFailed」「写失败标记」+ test/storage-checked.test.ts「setItem 抛错返回 ok:false 且带 reason」;顶部 `role=alert` 警告见 index.tsx)
@@ -283,6 +284,7 @@
 - `pnpm typecheck` / `pnpm lint`:全绿
 - `pnpm build:web` + `node scripts/check-web-purity.mjs dist/web`:web purity OK
 - Web CSP 放宽:构建产物 `dist/web/index.html` 含 `connect-src *`(经 `scripts/copy-web.mjs` 复制后改写,并带失败即抛守卫);桌面 `out/renderer/index.html` 逐域白名单原样保留(translate/DeepL/有道等域仍在),CSP 未被触碰
+- **CSP 取舍公示(CEO 批准)**:公开 Web 构建将整站 `connect-src` 放宽为 `*`——作用于整个 origin 而非逐域白名单,此为有意的权衡(桌面版产品本体不受影响),随发布记录可见;放宽规则单一来源 `scripts/relax-csp.mjs`,`build:web`(copy-web.mjs)与 `dev:web`(vite.web.config.ts)共用,指令缺失即构建失败
 
 ## 待人工项汇总
 
@@ -301,7 +303,7 @@
 > 以下属真实 Electron 主进程 / 浏览器运行时行为,单元层已测纯逻辑与分类,端到端需桌面手动目验(对应 brief Step 5)。
 
 8. 主进程端到端:真实超时(默认 15s / UI 可选 5·10·15·30·60s)中止、`net-cancel` 真中断在途 `net.fetch`、组件卸载中断、302 重定向暴露 finalUrl、跨域/内网无 CORS 接口收发
-9. 界面级:cURL 双方言粘贴导入、切换活动环境后 URL/headers 随 vars 变化、深链跳转 JSON/JWT 目标页填入并清键、含明文 token 导出警告弹窗
+9. 界面级:cURL 双方言粘贴导入、切换活动环境后 URL/headers 随 vars 变化、深链跳转 JSON/JWT 目标页填入并清键(含明文 token 导出警告已升级为 jsdom 自动化,见 test/rest-client-sidebar.test.tsx 用例 11/12,不再列待人工)
 10. 响应面板渲染:JSON 高亮树、>1MB 截断预览不冻结且提示「复制/深链用全量」、空响应 EMPTY 占位、4xx/5xx 红显真实响应
 11. 深链过大降级路径(setItem 抛 quota → 仅传选中文本)真实配额触发
 12. 导航/首页 NET 徽标视觉:translate + rest-api-client 两联网工具均显示徽标、离线工具无徽标(承接第 1 条目验)
