@@ -656,7 +656,7 @@ export function Splitter({ height, containerRef, onHeightChange, onReset }: Prop
     const move = (e: PointerEvent): void => {
       const d = drag.current
       if (!d) return
-      onHeightChange(d.startH + (e.clientY - d.startY), d.containerH)
+      onHeightChange(clampResponseHeight(d.startH + (e.clientY - d.startY), d.containerH), d.containerH)
     }
     const stop = (): void => {
       drag.current = null
@@ -1046,14 +1046,16 @@ describe('请求区页签', () => {
   it('切到 Headers:只渲染 headers 内容', () => {
     render(<RestApiClientPage />)
     fireEvent.click(screen.getByTestId('request-tab-headers'))
-    expect(screen.getByPlaceholderText('Header-Name')).toBeTruthy()
+    // 空请求下 headers 行数为 0(HEADERS 块原样迁移,不新增空行),故断言区块标题而非行内 input
+    expect(screen.getByText('HEADERS · 请求头')).toBeTruthy()
     expect(screen.queryByPlaceholderText('新增 key')).toBeNull()
   })
 
   it('切到 Body:只渲染 body 编辑器,且「格式化 JSON」与它在同一屏', () => {
     render(<RestApiClientPage />)
     fireEvent.click(screen.getByTestId('request-tab-body'))
-    expect(screen.getByPlaceholderText('{"key":"value"}  支持 {{var}}')).toBeTruthy()
+    // getByPlaceholderText 只归一化 DOM 文本、不归一化 matcher 字符串,双空格 matcher 匹配不到
+    expect(screen.getByPlaceholderText('{"key":"value"} 支持 {{var}}')).toBeTruthy()
     expect(screen.getByText('格式化 JSON')).toBeTruthy()
     expect(screen.queryByPlaceholderText('Header-Name')).toBeNull()
   })
@@ -1795,3 +1797,14 @@ Run: `pnpm dev:web`
 4. **折叠不删状态**：折叠态仍显示状态码/耗时/体积；出错时自动展开。
 5. **既有 testid 一个不少**。
 6. **`params` 编辑器的焦点保持行为不被破坏**（`rest-client-ui.test.tsx` 第 4 条是这次改版最容易被碰坏的既有行为）。
+
+---
+
+## 计划修正记录（执行中发现的计划缺陷，代码为准）
+
+以下三处是计划自身写错、由执行者改对并经 Task 独立 review 裁定的，已回写进上文：
+
+1. **Task 3 `move` 处理器缺夹紧**（原 L659）。原样写出的算术会发出 `5220`（测试期望 `800−160=640`）与 `−4780`（测试期望 `120`），计划自带的两条越界测试无法通过。修正：结果套 `clampResponseHeight`。夹紧放在 Splitter 是对的——Task 3 的测试断言的是 `onHeightChange` 收到的值，即 Splitter 自身的输出。与上游 `setHeight` 的夹紧重叠无害（幂等）。
+2. **Task 5 Headers 页签断言不可满足**。`EMPTY_REQUEST.headers` 为空，HEADERS 块「原样迁移」时不渲染行，故 `getByPlaceholderText('Header-Name')` 永远取不到。修正：断言区块标题 `HEADERS · 请求头`。附带说明：同文件第 1/3 条里 `queryByPlaceholderText('Header-Name')` 为 null 是平凡为真（空请求下本就不渲染），实际区分能力由 `新增 key` / cURL 占位符的缺席断言提供。
+3. **Task 5 body 占位符 matcher 空格数**。`getByPlaceholderText` 只归一化 DOM 侧文本、不归一化 matcher 字符串（`@testing-library/dom` `matches.js`），双空格 matcher 匹配不到。修正：matcher 写单空格；生产占位符保持原样不动。
+4. **Task 5 需附带修 `index.tsx` 的 `clone()` 键序**（超出 brief 声明的「只改 index.tsx:186」）。原 `clone` 发出 `{method,url,body,headers}`，与 `EMPTY_REQUEST` 的 `{method,url,headers,body}` 不同；`dirty` 用对键序敏感的 `JSON.stringify` 比较，故「另存为副本」重置 `baseline` 后标记永远不消失。brief 自己的用例与 spec §2 都要求标记消失，故这是最小根因修复。修正：`clone` 按 `EMPTY_REQUEST` 的键序输出。
