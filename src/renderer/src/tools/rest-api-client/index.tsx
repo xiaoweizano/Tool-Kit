@@ -6,6 +6,8 @@ import { parseCurl } from './curl-parse'
 import { Sidebar } from './components/Sidebar'
 import { RequestPanel } from './components/RequestPanel'
 import { ResponsePanel } from './components/ResponsePanel'
+import { Splitter } from './components/Splitter'
+import { useRestLayout } from './use-rest-layout'
 import type { Env, HistoryEntry, RequestModel, RequestNode, ResponseModel, UiError } from './types'
 
 const EMPTY_REQUEST: RequestModel = { method: 'GET', url: '', headers: [], body: '' }
@@ -39,6 +41,8 @@ export default function RestApiClientPage(): JSX.Element {
   const [sending, setSending] = useState(false)
   const [response, setResponse] = useState<ResponseModel | null>(null)
   const [error, setError] = useState<UiError | null>(null)
+  const { height, collapsed, setHeight, toggle, expand, reset } = useRestLayout()
+  const mainRef = useRef<HTMLDivElement>(null)
 
   const env: Env | undefined = environments.find((e) => e.id === activeEnvId)
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline)
@@ -118,9 +122,10 @@ export default function RestApiClientPage(): JSX.Element {
       } else {
         setResponse(null)
         setError({ title: '请求失败', message: res.message })
+        expand()
       }
     })
-  }, [draft, env, sending, timeoutSec, pushHistory])
+  }, [draft, env, sending, timeoutSec, pushHistory, expand])
 
   const onImportCurl = useCallback(
     (text: string): void => {
@@ -134,9 +139,10 @@ export default function RestApiClientPage(): JSX.Element {
         // 粘贴解析失败 ≠ 请求失败:标题区分,不把导入错误伪装成请求错误
         setError({ title: '导入失败', message: `cURL 解析失败:${r.message}` })
         setResponse(null)
+        expand()
       }
     },
-    [confirmDiscardIfDirty, loadDraft]
+    [confirmDiscardIfDirty, loadDraft, expand]
   )
 
   const onExportCurl = useCallback((): void => {
@@ -174,7 +180,7 @@ export default function RestApiClientPage(): JSX.Element {
           onHistoryLoad={onHistoryLoad}
           onNewRequest={onNewRequest}
         />
-        <div className="flex min-w-0 flex-1 gap-3 overflow-auto p-4">
+        <div ref={mainRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
           <RequestPanel
             draft={draft}
             onChange={patch}
@@ -190,10 +196,21 @@ export default function RestApiClientPage(): JSX.Element {
             onSaveCopy={onSaveCopy}
             dirty={dirty}
           />
+          {!collapsed && (
+            <Splitter
+              height={height}
+              containerRef={mainRef}
+              onHeightChange={setHeight}
+              onReset={reset}
+            />
+          )}
           <ResponsePanel
             response={response}
             error={error}
             sending={sending}
+            collapsed={collapsed}
+            onToggle={toggle}
+            height={height}
             onCancel={() => {
               cancelCurrent()
               setSending(false)
