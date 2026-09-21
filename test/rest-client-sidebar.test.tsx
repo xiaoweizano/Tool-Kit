@@ -229,7 +229,7 @@ describe('bundle 导入/导出 UI + 历史「已截断」徽标', () => {
     expect(useRestStore.getState().collections.length).toBe(0)
   })
 
-  it('15. 历史 body 截断条目显示「已截断」徽标(截断可见,不静默)', () => {
+  it('15. 切到「历史」页签后,body 截断条目显示「已截断」徽标(截断可见,不静默)', () => {
     useRestStore.getState().pushHistory({
       id: 'h1',
       request: { method: 'POST', url: '/u', headers: [], body: 'x'.repeat(20000) },
@@ -238,6 +238,7 @@ describe('bundle 导入/导出 UI + 历史「已截断」徽标', () => {
       at: 1
     })
     render(<RestApiClientPage />)
+    fireEvent.click(screen.getByTestId('sidebar-tab-history'))
     expect(screen.getByText('已截断')).toBeTruthy()
   })
 })

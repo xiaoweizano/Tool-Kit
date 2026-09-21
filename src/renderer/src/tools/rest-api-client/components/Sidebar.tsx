@@ -18,11 +18,15 @@ interface MoveTarget {
   name: string
 }
 
+type SidebarTab = 'collections' | 'history'
+
 export function Sidebar(p: Props): JSX.Element {
   const [selectedParentId, setSelectedParentId] = useState('')
   const [newKey, setNewKey] = useState('')
   const [newVal, setNewVal] = useState('')
   const [bundleMsg, setBundleMsg] = useState('')
+  const [tab, setTab] = useState<SidebarTab>('collections')
+  const [varsOpen, setVarsOpen] = useState(true)
   const importInputRef = useRef<HTMLInputElement>(null)
 
   // 移动目标 = 树中所有分组(递归展平),排除当前正在移动的行由 select 逻辑兜底
@@ -113,15 +117,15 @@ export function Sidebar(p: Props): JSX.Element {
   }
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col gap-3 overflow-auto border-r border-base-300 bg-base-200/20 p-3">
+    <aside className="flex w-[200px] shrink-0 flex-col gap-2 overflow-auto border-r border-base-300 bg-base-200/20 p-3">
       <button data-testid="new-request-btn" className="btn btn-sm btn-primary" onClick={p.onNewRequest}>
         + 新建请求
       </button>
 
-      <div>
-        <div className="mb-1 font-mono text-[11px] tracking-widest text-neutral">ENV · 环境</div>
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 font-mono text-[11px] tracking-widest text-neutral">ENV</span>
         <select
-          className="select select-bordered select-sm w-full font-mono"
+          className="select select-bordered select-xs min-w-0 flex-1 font-mono"
           value={p.activeEnvId}
           onChange={(e) => p.onSetEnv(e.target.value)}
           aria-label="活动环境"
@@ -133,128 +137,130 @@ export function Sidebar(p: Props): JSX.Element {
             </option>
           ))}
         </select>
-        <button data-testid="env-add-btn" className="btn btn-xs btn-ghost mt-1" onClick={onAddEnv}>
+        <button data-testid="env-add-btn" className="btn btn-xs btn-ghost shrink-0" onClick={onAddEnv} title="新增环境">
           + 环境
         </button>
+      </div>
 
-        <ul className="mt-1 flex flex-col gap-1">
-          {p.environments.map((e) => {
-            const varCount = Object.keys(e.vars).length
-            return (
-              <li key={e.id} className="group flex items-center gap-1 font-mono text-[11px]">
-                <span className={`min-w-0 flex-1 truncate ${e.id === p.activeEnvId ? 'font-bold text-primary' : 'text-neutral'}`}>
-                  {e.name}
-                  {e.id === p.activeEnvId && <span className="ml-1 opacity-70">· 活动</span>}
-                </span>
-                <button
-                  className="btn btn-xs btn-ghost opacity-0 group-hover:opacity-100"
-                  title="重命名环境"
-                  onClick={() => {
-                    const name = window.prompt('环境名称', e.name)
-                    if (name && name.trim()) useRestStore.getState().renameEnv(e.id, name.trim())
-                  }}
-                >
-                  重命名
-                </button>
-                <button
-                  data-testid={`env-delete-btn-${e.id}`}
-                  className="btn btn-xs btn-ghost text-error opacity-0 group-hover:opacity-100"
-                  title="删除环境"
-                  onClick={() => {
-                    if (varCount > 0 && !window.confirm(`环境「${e.name}」含 ${varCount} 个变量,确定删除?`)) return
-                    useRestStore.getState().deleteEnv(e.id)
-                  }}
-                >
-                  删除
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-
-        {activeEnv && (
-          <div className="mt-2 border border-base-300 bg-base-100/60 p-2">
-            <div className="mb-1 font-mono text-[11px] text-neutral">变量 · {activeEnv.name}</div>
-            {Object.keys(activeEnv.vars).length === 0 && (
-              <div className="mb-1 font-mono text-[11px] text-neutral">无变量</div>
-            )}
-            <ul className="flex flex-col gap-1">
-              {Object.entries(activeEnv.vars).map(([k, v]) => (
-                <li key={k} className="flex items-center gap-1 font-mono text-[11px]">
-                  <span className="shrink-0 font-bold">{k}</span>
-                  <span className="min-w-0 flex-1 truncate text-neutral">{v}</span>
-                  <button
-                    className="btn btn-xs btn-ghost text-error"
-                    title="删除变量"
-                    onClick={() => onRemoveEnvVar(k)}
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-1 flex gap-1">
-              <input
-                data-testid="env-var-key"
-                className="input input-bordered input-xs w-1/3 font-mono"
-                placeholder="key"
-                value={newKey}
-                onChange={(e) => setNewKey(e.target.value)}
-              />
-              <input
-                data-testid="env-var-value"
-                className="input input-bordered input-xs flex-1 font-mono"
-                placeholder="value(支持 {{var}})"
-                value={newVal}
-                onChange={(e) => setNewVal(e.target.value)}
-              />
-              <button data-testid="env-var-add-btn" className="btn btn-xs btn-ghost" onClick={onAddEnvVar}>
-                +
+      <ul className="mt-1 flex flex-col gap-1">
+        {p.environments.map((e) => {
+          const varCount = Object.keys(e.vars).length
+          return (
+            <li key={e.id} className="group flex items-center gap-1 font-mono text-[11px]">
+              <span className={`min-w-0 flex-1 truncate ${e.id === p.activeEnvId ? 'font-bold text-primary' : 'text-neutral'}`}>
+                {e.name}
+                {e.id === p.activeEnvId && <span className="ml-1 opacity-70">· 活动</span>}
+              </span>
+              <button
+                className="btn btn-xs btn-ghost opacity-0 group-hover:opacity-100"
+                title="重命名环境"
+                onClick={() => {
+                  const name = window.prompt('环境名称', e.name)
+                  if (name && name.trim()) useRestStore.getState().renameEnv(e.id, name.trim())
+                }}
+              >
+                重命名
               </button>
+              <button
+                data-testid={`env-delete-btn-${e.id}`}
+                className="btn btn-xs btn-ghost text-error opacity-0 group-hover:opacity-100"
+                title="删除环境"
+                onClick={() => {
+                  if (varCount > 0 && !window.confirm(`环境「${e.name}」含 ${varCount} 个变量,确定删除?`)) return
+                  useRestStore.getState().deleteEnv(e.id)
+                }}
+              >
+                删除
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+
+      {activeEnv && (
+        <>
+          <button
+            data-testid="env-vars-toggle"
+            aria-expanded={varsOpen}
+            className="btn btn-xs btn-ghost w-full justify-start gap-1 font-mono text-neutral"
+            onClick={() => setVarsOpen((o) => !o)}
+          >
+            <span aria-hidden="true">{varsOpen ? '▾' : '▸'}</span>
+            变量({Object.keys(activeEnv.vars).length})
+          </button>
+          {varsOpen && (
+            <div className="border border-base-300 bg-base-100/60 p-2">
+              {Object.keys(activeEnv.vars).length === 0 && (
+                <div className="mb-1 font-mono text-[11px] text-neutral">无变量</div>
+              )}
+              <ul className="flex flex-col gap-1">
+                {Object.entries(activeEnv.vars).map(([k, v]) => (
+                  <li key={k} className="flex items-center gap-1 font-mono text-[11px]">
+                    <span className="shrink-0 font-bold">{k}</span>
+                    <span className="min-w-0 flex-1 truncate text-neutral">{v}</span>
+                    <button
+                      className="btn btn-xs btn-ghost text-error"
+                      title="删除变量"
+                      onClick={() => onRemoveEnvVar(k)}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-1 flex gap-1">
+                <input
+                  data-testid="env-var-key"
+                  className="input input-bordered input-xs w-1/3 font-mono"
+                  placeholder="key"
+                  value={newKey}
+                  onChange={(e) => setNewKey(e.target.value)}
+                />
+                <input
+                  data-testid="env-var-value"
+                  className="input input-bordered input-xs flex-1 font-mono"
+                  placeholder="value(支持 {{var}})"
+                  value={newVal}
+                  onChange={(e) => setNewVal(e.target.value)}
+                />
+                <button data-testid="env-var-add-btn" className="btn btn-xs btn-ghost" onClick={onAddEnvVar}>
+                  +
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-
-      <div className="min-h-0 flex-1">
-        <div className="mb-1 font-mono text-[11px] tracking-widest text-neutral">COLLECTIONS · 集合</div>
-        <div className="mb-1 flex gap-1">
-          <button data-testid="add-group-btn" className="btn btn-xs btn-ghost" onClick={onAddGroup}>
-            + 分组
-          </button>
-          <button data-testid="add-request-btn" className="btn btn-xs btn-ghost" onClick={onAddRequest}>
-            + 请求
-          </button>
-          {selectedParentId && (
-            <button className="btn btn-xs btn-ghost text-neutral" onClick={() => setSelectedParentId('')}>
-              移至根
-            </button>
           )}
-        </div>
-        {p.collections.length === 0 && <div className="font-mono text-[11px] text-neutral">暂无集合</div>}
-        {p.collections.map((g) => (
-          <TreeNode
-            key={g.id}
-            node={g}
-            depth={0}
-            moveTargets={moveTargets}
-            selectedParentId={selectedParentId}
-            onSelectParent={setSelectedParentId}
-            onLoadRequest={p.onLoadRequest}
-          />
-        ))}
-      </div>
+        </>
+      )}
 
-      <div>
-        <div className="mb-1 font-mono text-[11px] tracking-widest text-neutral">BUNDLE · 导入 / 导出</div>
-        <div className="flex gap-1">
+      <div className="flex items-center border-b border-base-300">
+        <div role="tablist" aria-label="左栏视图" className="flex items-center gap-3">
+          <button
+            data-testid="sidebar-tab-collections"
+            role="tab"
+            aria-selected={tab === 'collections'}
+            className={tabClass(tab === 'collections')}
+            onClick={() => setTab('collections')}
+          >
+            集合
+          </button>
+          <button
+            data-testid="sidebar-tab-history"
+            role="tab"
+            aria-selected={tab === 'history'}
+            className={tabClass(tab === 'history')}
+            onClick={() => setTab('history')}
+          >
+            历史
+          </button>
+        </div>
+        <div className="ml-auto flex items-center gap-1">
           <button
             data-testid="bundle-export-btn"
             className="btn btn-xs btn-ghost"
             title="导出集合与环境为 JSON 文件(含环境变量明文值)"
             onClick={onBundleExport}
           >
-            导出
+            ⬆
           </button>
           <button
             data-testid="bundle-import-btn"
@@ -262,7 +268,7 @@ export function Sidebar(p: Props): JSX.Element {
             title="从 JSON 文件导入集合与环境(按 id 合并)"
             onClick={() => importInputRef.current?.click()}
           >
-            导入
+            ⬇
           </button>
           <input
             ref={importInputRef}
@@ -277,38 +283,77 @@ export function Sidebar(p: Props): JSX.Element {
             }}
           />
         </div>
-        {bundleMsg && (
-          <div data-testid="bundle-import-notice" className="mt-1 break-all font-mono text-[11px] text-info">
-            {bundleMsg}
-          </div>
-        )}
       </div>
+      {bundleMsg && (
+        <div data-testid="bundle-import-notice" className="break-all font-mono text-[11px] text-info">
+          {bundleMsg}
+        </div>
+      )}
 
-      <div className="min-h-0 flex-1">
-        <div className="mb-1 font-mono text-[11px] tracking-widest text-neutral">HISTORY · 历史</div>
-        {p.history.length === 0 && <div className="font-mono text-[11px] text-neutral">暂无历史</div>}
-        <ul className="flex flex-col gap-1">
-          {p.history.map((h) => (
-            <li key={h.id}>
-              <button
-                className="btn btn-xs btn-ghost w-full justify-start gap-2 truncate font-mono"
-                onClick={() => p.onHistoryLoad(h)}
-                title={`${h.response.status} · ${h.request.method} ${h.request.url}`}
-              >
-                <span className={`font-bold ${h.response.status >= 400 ? 'text-error' : 'text-success'}`}>{h.request.method}</span>
-                <span className="min-w-0 flex-1 truncate text-left">{h.request.url}</span>
-                {h.request.truncated && (
-                  <span className="badge badge-warning badge-xs shrink-0" title="该历史 body 已截断至 10KB,回发前请核对完整内容">
-                    已截断
-                  </span>
-                )}
+      <div role="tabpanel" className="min-h-0 flex-1">
+        {tab === 'collections' ? (
+          <div>
+            <div className="mb-1 flex gap-1">
+              <button data-testid="add-group-btn" className="btn btn-xs btn-ghost" onClick={onAddGroup}>
+                + 分组
               </button>
-            </li>
-          ))}
-        </ul>
+              <button data-testid="add-request-btn" className="btn btn-xs btn-ghost" onClick={onAddRequest}>
+                + 请求
+              </button>
+              {selectedParentId && (
+                <button className="btn btn-xs btn-ghost text-neutral" onClick={() => setSelectedParentId('')}>
+                  移至根
+                </button>
+              )}
+            </div>
+            {p.collections.length === 0 && <div className="font-mono text-[11px] text-neutral">暂无集合</div>}
+            {p.collections.map((g) => (
+              <TreeNode
+                key={g.id}
+                node={g}
+                depth={0}
+                moveTargets={moveTargets}
+                selectedParentId={selectedParentId}
+                onSelectParent={setSelectedParentId}
+                onLoadRequest={p.onLoadRequest}
+              />
+            ))}
+          </div>
+        ) : (
+          <>
+            {p.history.length === 0 && <div className="font-mono text-[11px] text-neutral">暂无历史</div>}
+            <ul className="flex flex-col gap-1">
+              {p.history.map((h) => (
+                <li key={h.id}>
+                  <button
+                    className="btn btn-xs btn-ghost w-full justify-start gap-2 truncate font-mono"
+                    onClick={() => p.onHistoryLoad(h)}
+                    title={`${h.response.status} · ${h.request.method} ${h.request.url}`}
+                  >
+                    <span className={`font-bold ${h.response.status >= 400 ? 'text-error' : 'text-success'}`}>
+                      {h.request.method}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-left">{h.request.url}</span>
+                    {h.request.truncated && (
+                      <span className="badge badge-warning badge-xs shrink-0" title="该历史 body 已截断至 10KB,回发前请核对完整内容">
+                        已截断
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
     </aside>
   )
+}
+
+function tabClass(active: boolean): string {
+  return `btn btn-xs btn-ghost font-mono ${
+    active ? 'border-b-2 border-primary text-base-content' : 'text-neutral'
+  }`
 }
 
 function collectGroups(nodes: CollectionNode[], acc: MoveTarget[] = []): MoveTarget[] {
