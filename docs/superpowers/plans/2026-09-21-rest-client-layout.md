@@ -1802,9 +1802,11 @@ Run: `pnpm dev:web`
 
 ## 计划修正记录（执行中发现的计划缺陷，代码为准）
 
-以下三处是计划自身写错、由执行者改对并经 Task 独立 review 裁定的，已回写进上文：
+以下六处是本次执行暴露出的计划自身缺陷。第 1–4 条由执行者改对并经独立 review 裁定，已回写进上文；第 5 条明确不修、留给后续 change；第 6 条在最终 review 后修掉：
 
 1. **Task 3 `move` 处理器缺夹紧**（原 L659）。原样写出的算术会发出 `5220`（测试期望 `800−160=640`）与 `−4780`（测试期望 `120`），计划自带的两条越界测试无法通过。修正：结果套 `clampResponseHeight`。夹紧放在 Splitter 是对的——Task 3 的测试断言的是 `onHeightChange` 收到的值，即 Splitter 自身的输出。与上游 `setHeight` 的夹紧重叠无害（幂等）。
 2. **Task 5 Headers 页签断言不可满足**。`EMPTY_REQUEST.headers` 为空，HEADERS 块「原样迁移」时不渲染行，故 `getByPlaceholderText('Header-Name')` 永远取不到。修正：断言区块标题 `HEADERS · 请求头`。附带说明：同文件第 1/3 条里 `queryByPlaceholderText('Header-Name')` 为 null 是平凡为真（空请求下本就不渲染），实际区分能力由 `新增 key` / cURL 占位符的缺席断言提供。
 3. **Task 5 body 占位符 matcher 空格数**。`getByPlaceholderText` 只归一化 DOM 侧文本、不归一化 matcher 字符串（`@testing-library/dom` `matches.js`），双空格 matcher 匹配不到。修正：matcher 写单空格；生产占位符保持原样不动。
 4. **Task 5 需附带修 `index.tsx` 的 `clone()` 键序**（超出 brief 声明的「只改 index.tsx:186」）。原 `clone` 发出 `{method,url,body,headers}`，与 `EMPTY_REQUEST` 的 `{method,url,headers,body}` 不同；`dirty` 用对键序敏感的 `JSON.stringify` 比较，故「另存为副本」重置 `baseline` 后标记永远不消失。brief 自己的用例与 spec §2 都要求标记消失，故这是最小根因修复。修正：`clone` 按 `EMPTY_REQUEST` 的键序输出。
+5. **Task 2 `reset()` 无夹紧**（**未修，留给后续 change**）。`reset: () => void` 的签名拿不到容器高度，故双击复位 commit 的是未夹紧的 `DEFAULT_RESPONSE_H`（320），在高度不足 `320+160=480px` 的窗口上违反 `MAX_RESERVE`。视觉上被 `ResponsePanel` 的 CSS `maxHeight: calc(100% - 160px)` 兜住，`aria-valuenow` 也是夹紧后的值，下次拖拽会从「有效高度」重新夹紧，所以没有可见缺陷——只是存储值不准。要真正修需改签名（`reset(containerHeight)`），牵动 hook、Splitter 的 `onReset` 契约与一条测试，故按后续 change 处理，不做顺手改。
+6. **Task 6 折叠态判据缺 `!sending`**（**已在最终 review 后修掉**）。`sending` 时未清 `response`，展开态会把**上一次**的响应体渲染在「◐ 请求进行中…」头部下面——头部与内容说的是两件事，且改版前的代码是用「仅进行中盒子」替换整个面板。修正：body 判据改为 `!collapsed && !sending &&`，并补一条测试（先红后绿）。同时把 `jsonValue` / `preview` 包进 `useMemo`（拖拽 60 次/秒会重复 `JSON.parse` 整个响应体）。`@components/JsonView` 保持不动（其它工具在用）。
