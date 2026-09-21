@@ -323,9 +323,7 @@ export function RequestPanel(p: Props): JSX.Element {
   )
 }
 
-const TAB_LABEL: Record<'params' | 'headers' | 'body' | 'curl', string> = {
-  params: 'Params',
-  headers: 'Headers',
+const TAB_LABEL: Record<'body' | 'curl', string> = {
   body: 'Body',
   curl: 'cURL'
 }

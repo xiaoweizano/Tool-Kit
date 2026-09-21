@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { JsonView } from '@components/JsonView'
 import { CopyButton } from '@components/CopyButton'
 import { writeDeepLink } from '../deep-link'
@@ -32,12 +32,17 @@ export function ResponsePanel({
   const body = response?.body ?? ''
   const size = body.length
   const truncated = size > MB
-  const preview = truncated ? body.slice(0, MB) : body
   const ct = (response?.headers['content-type'] ?? '').toLowerCase()
   const isJson = ct.includes('json') || /^\s*[[{]/.test(body)
+  // 拖拽分隔条时 height 变化会高频重渲染本组件(~60/s):把全文 JSON.parse 与 1MB slice
+  // 缓存起来,只有 body / 截断标志 / JSON 判定真正变化时才重算,避免每次指针移动阻塞主线程。
+  const preview = useMemo(() => (truncated ? body.slice(0, MB) : body), [body, truncated])
   // 超过 1MB 的响应:绝不整体 JSON.parse、也绝不渲染完整 JsonView 树(会冻结界面);
   // 只走下方截断 <pre> 预览分支。上方的截断提示条已说明「复制」「深链」仍使用全量文本。
-  const jsonValue = !truncated && isJson ? safeParse(body) : null
+  const jsonValue = useMemo(
+    () => (!truncated && isJson ? safeParse(body) : null),
+    [body, truncated, isJson]
+  )
 
   const selected = (): string => {
     try {
@@ -127,7 +132,8 @@ export function ResponsePanel({
         </div>
       </div>
 
-      {!collapsed && (
+      {/* 发送中隐藏整个 body 容器:否则会残留上一次响应的内容,与「进行中」头部自相矛盾 */}
+      {!collapsed && !sending && (
         <div data-testid="response-body" className="flex min-h-0 flex-1 flex-col">
           {/* 错误详情 */}
           {error && <div className="px-3 pb-2 text-sm">{error.message}</div>}

@@ -94,6 +94,15 @@ describe('折叠态', () => {
   })
 })
 
+describe('发送中', () => {
+  it('重新发送时不残留上一次响应的 body(进行中不得展示旧响应)', () => {
+    // response 非空 + sending → 头部必须显示进行中,且旧响应 body 必须离开 DOM
+    renderPanel({ sending: true, collapsed: false })
+    expect(screen.getByText(/请求进行中/)).toBeTruthy()
+    expect(screen.queryByTestId('response-body')).toBeNull()
+  })
+})
+
 describe('切换', () => {
   it('点头部切换按钮触发 onToggle', () => {
     const onToggle = vi.fn()
