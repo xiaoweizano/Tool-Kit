@@ -13,7 +13,7 @@ export interface RestLayout {
   setHeight: (desired: number, containerHeight: number) => void
   toggle: () => void
   expand: () => void
-  reset: () => void
+  reset: (containerHeight: number) => void
 }
 
 export function useRestLayout(): RestLayout {
@@ -44,9 +44,14 @@ export function useRestLayout(): RestLayout {
     commit({ ...latest.current, collapsed: false })
   }, [commit])
 
-  const reset = useCallback((): void => {
-    commit({ ...latest.current, height: DEFAULT_RESPONSE_H })
-  }, [commit])
+  // 复位也走夹紧:矮容器上硬套 320 会越过 MAX_RESERVE 挤掉请求区。
+  // 容器不可测时 maxResponseHeight 返回 Infinity,等价于保留原行为。
+  const reset = useCallback(
+    (containerHeight: number): void => {
+      commit({ ...latest.current, height: clampResponseHeight(DEFAULT_RESPONSE_H, containerHeight) })
+    },
+    [commit]
+  )
 
   return { height: layout.height, collapsed: layout.collapsed, setHeight, toggle, expand, reset }
 }

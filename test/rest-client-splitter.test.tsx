@@ -73,10 +73,11 @@ describe('Splitter 拖拽', () => {
 })
 
 describe('Splitter 其它入口', () => {
-  it('双击复位', () => {
+  it('双击复位:把容器高度一并交回,便于按当前容器夹紧', () => {
     const { onReset, handle } = setup()
     fireEvent.doubleClick(handle)
     expect(onReset).toHaveBeenCalledTimes(1)
+    expect(onReset).toHaveBeenCalledWith(800)
   })
 
   it('↓ 与 ↑ 各步进 RESIZE_STEP', () => {

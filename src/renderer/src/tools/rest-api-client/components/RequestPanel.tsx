@@ -159,15 +159,15 @@ export function RequestPanel(p: Props): JSX.Element {
       </div>
 
       {hint.undefinedVars.length > 0 ? (
-        <div className="font-mono text-[11px] text-warning">
+        <div className="px-3 py-1 font-mono text-[11px] text-warning">
           未定义变量:{hint.undefinedVars.map((v) => <span key={v} className="badge badge-warning badge-outline badge-sm mr-1">{`{{${v}}}`}</span>)}
           <span className="ml-1 text-neutral">当前环境「{p.env?.name ?? '无'}」缺失,发送时按原样保留</span>
         </div>
       ) : hint.resolved !== p.draft.url ? (
-        <div className="truncate font-mono text-[11px] text-neutral">→ {hint.resolved}</div>
+        <div className="truncate px-3 py-1 font-mono text-[11px] text-neutral">→ {hint.resolved}</div>
       ) : null}
 
-      <div className="flex items-center gap-3 border-b border-base-300 px-3">
+      <div role="tablist" aria-label="请求区视图" className="flex items-center gap-3 border-b border-base-300 px-3">
         <button data-testid="request-tab-params" role="tab" aria-selected={tab === 'params'} className={tabClass(tab === 'params')} onClick={() => setTab('params')}>
           Params{qCount > 0 ? ` ${qCount}` : ''}
         </button>

@@ -7,7 +7,8 @@ interface Props {
   /** 主区容器:拖拽/键盘结果按它的高度夹紧 */
   containerRef: RefObject<HTMLElement | null>
   onHeightChange: (desired: number, containerHeight: number) => void
-  onReset: () => void
+  /** 交回容器高度,复位时才能按当前容器夹紧(矮容器不该硬套默认 320) */
+  onReset: (containerHeight: number) => void
 }
 
 export function Splitter({ height, containerRef, onHeightChange, onReset }: Props): JSX.Element {
@@ -82,9 +83,9 @@ export function Splitter({ height, containerRef, onHeightChange, onReset }: Prop
       aria-valuemax={max ?? undefined}
       tabIndex={0}
       onPointerDown={onPointerDown}
-      onDoubleClick={onReset}
+      onDoubleClick={() => onReset(measure().containerH)}
       onKeyDown={onKeyDown}
-      className={`h-[3px] shrink-0 cursor-row-resize outline-none transition-colors ${
+      className={`h-[3px] shrink-0 touch-none cursor-row-resize outline-none transition-colors ${
         dragging ? 'bg-primary' : 'bg-base-300 hover:bg-primary focus-visible:bg-primary'
       }`}
     />

@@ -93,10 +93,38 @@ describe('useRestLayout', () => {
       result.current.setHeight(600, 1000)
     })
     act(() => {
-      result.current.reset()
+      result.current.reset(800)
     })
     expect(result.current.height).toBe(DEFAULT_RESPONSE_H)
     expect(result.current.collapsed).toBe(true)
+  })
+
+  it('reset 在矮容器上被夹紧(而非硬套默认 320)', () => {
+    const { result } = renderHook(() => useRestLayout())
+    act(() => {
+      result.current.reset(400)
+    })
+    // 400 − MAX_RESERVE = 240,低于默认 320;不夹紧就会越过 MAX_RESERVE 挤掉请求区
+    expect(result.current.height).toBe(400 - MAX_RESERVE)
+    expect(stored().height).toBe(400 - MAX_RESERVE)
+  })
+
+  it('toggle 折叠/展开都保留高度(不会顺手复位)', () => {
+    const { result } = renderHook(() => useRestLayout())
+    act(() => {
+      result.current.setHeight(500, 800)
+    })
+    expect(result.current.height).toBe(500)
+    act(() => {
+      result.current.toggle()
+    })
+    expect(result.current.collapsed).toBe(true)
+    expect(result.current.height).toBe(500)
+    act(() => {
+      result.current.toggle()
+    })
+    expect(result.current.collapsed).toBe(false)
+    expect(result.current.height).toBe(500)
   })
 
   it('存储读取抛错时回落默认、不抛、不点亮「本地存储写入失败」横幅', () => {

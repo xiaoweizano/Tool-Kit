@@ -68,6 +68,21 @@ describe('rest client UI', () => {
     expect(screen.getByTestId('response-body')).toBeTruthy()
   })
 
+  it('失败自动展开:折叠状态导入非法 cURL 失败 → 响应区展开且失败可见', () => {
+    render(<RestApiClientPage />)
+    fireEvent.click(screen.getByTestId('request-tab-curl'))
+    // 先折叠,并证明折叠确实生效 —— 否则本用例可能在「本来就展开」时假绿
+    fireEvent.click(screen.getByTestId('response-toggle'))
+    expect(screen.getByTestId('response-toggle').getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByTestId('response-body')).toBeNull()
+    // 非 cURL 文本走解析失败分支(该分支不碰 dirty 丢弃确认)
+    fireEvent.change(screen.getByTestId('curl-import'), { target: { value: 'not a curl command' } })
+    fireEvent.click(screen.getByText('解析导入'))
+    expect(screen.getByTestId('response-toggle').getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByTestId('response-body')).toBeTruthy()
+    expect(screen.getByText(/导入失败/)).toBeTruthy()
+  })
+
   it('布局记忆:折叠状态写进独立 key,不混入 zustand 的 toolkit.rest-client', () => {
     render(<RestApiClientPage />)
     fireEvent.click(screen.getByTestId('response-toggle'))
