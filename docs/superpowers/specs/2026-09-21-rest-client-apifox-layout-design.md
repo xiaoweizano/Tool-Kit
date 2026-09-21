@@ -53,10 +53,11 @@
 |---|---|
 | 标题行 | 请求名称输入框（**仍是 `<input>`**，`aria-label="请求名称"` 保留；仅去掉 `input-bordered` 外观改为无框标题样式，聚焦时才显边框）· `● 未保存`（仅 dirty 时出现）· 右端 `另存为副本` |
 | URL 行 | METHOD ▾ / URL 输入 / 超时 ▾ / `发送` |
-| 页签行 | `Params` `Headers 2` `Body` `cURL`；Body 激活时右端出 `格式化 JSON` |
+| 页签行 | `Params` `Headers 2` `Body` `cURL`（计数为 0 时不显示数字） |
 
 - **页签内容 = 现有四块原样迁移**，只换容器，不重写逻辑。特别是 `RequestPanel.tsx:30-56` 那套「本地 `params` state + `syncedUrlRef` 防回解析覆盖、按 key 名复用 id 防止重挂载打断中文输入法」的机制必须原样保留——它是已有测试（`rest-client-ui.test.tsx` 第 4 条）守着的坑。
 - **cURL 页签自带的动作随内容一起搬**：`导出 cURL`、`解析导入`、粘贴 `textarea` 都留在 cURL 页签内部，不提到头部——它们是该页签的局部动作，不是全局动作。
+- **`格式化 JSON` 留在 Body 页签内容内**，不提到页签行右端。它与自己的报错文案 `formatMsg`（「body 不是合法 JSON，无法格式化」）必须相邻，否则点完按钮的反馈会被甩到几百像素之外——这是不静默原则在细节上的落地。
 - **一次只渲染激活页签的内容**，不再四块同屏。
 - **页签计数**：Params 用 query 参数条数、Headers 用 `headers.length`；为 0 时不显示数字（避免 `Params 0` 的噪声）。计数的意义是「未激活的页签里有没有东西」，折叠/切走后仍看得见。
 - Body 编辑区高度改为 `flex-1` 吃满剩余空间，去掉写死的 `h-32`。
@@ -83,16 +84,26 @@
 - 分隔条 3px，pointer 拖拽改高度，使用 `setPointerCapture` 保证拖出窗口也不丢事件。
 - 高度 clamp：**min 120px**，**max = 主区高度 − 160px**（保证请求区永远留得住头部 + 至少几行编辑区）。
 - 双击分隔条复位到默认 **320px**。
-- 键盘可达：分隔条 `tabIndex=0`，`role="separator"`，`aria-orientation="vertical"`，`aria-valuenow/min/max`；`↑/↓` 按 16px 步进调整。折叠切换按钮 `aria-expanded`。
+- 键盘可达：分隔条 `tabIndex=0`，`role="separator"`，`aria-orientation="horizontal"`（分隔条本身是横线，夹的是「上/下」两个面板），`aria-valuenow`/`aria-valuemin`，`aria-valuemax` 仅在容器高度可测时给出（不可测时省略该属性，避免 `now > max` 的非法取值）；`↑/↓` 按 16px 步进调整。折叠切换按钮 `aria-expanded`。
 - 记忆：高度 + 折叠状态写入**独立 localStorage key** `toolkit.rest-client.layout`。
 
 **为什么布局状态不进 zustand store**：`store.ts:191` 的 `partialize` 与 `store.ts:218` 的 `exportBundle` 都是**显式列字段**的。布局是会话级 UI 顺位，放进去就多了一条「会不会混进 bundle schema」的路径要守；放独立 key 则完全无交集。
 
-**已知且刻意的降级**：`localStorage` 读/写失败（隐私模式、配额）时，布局静默回落到默认值，**不触发**顶部「本地存储写入失败」横幅。理由是这条数据和用户数据无关、也没有可采取的动作；store 那条横幅守的是集合/环境/历史，不能被无关噪声点亮。这是一个**明确的例外**，不是遗漏——写测试时按「读失败回落默认、不抛错」断言。
+**读写必须走 `@core/storage`**：`core/storage.ts` 开头写明「一切持久化的单一出口（renderer 内禁止直接调 localStorage）」，用 `storageGet` / `storageSet`，不要直接碰 `localStorage`。
+
+**已知且刻意的降级**：布局读/写失败（隐私模式、配额）时静默回落到默认值，**不触发**顶部「本地存储写入失败」横幅。这不是新开的例外——`storageGet`/`storageSet` 本身就是按「静默、不影响功能」实现的既有约定；而且这条数据和用户数据无关、也没有可采取的动作，store 那条横幅守的是集合/环境/历史，不该被无关噪声点亮。写测试时按「读失败回落默认、不抛错、不点亮横幅」断言。
 
 ### 发送后不自动展开
 
 用户折起响应区写 JSON 时，发完请求**不**把布局拽走；摘要条从 `◐ 进行中` 变为结果色即可，状态始终可见（见 §5）。
+
+### 失败时自动展开（成功与失败的唯一不对称）
+
+**错误出现即展开响应区**——请求失败与 cURL 导入失败都算。
+
+理由是折叠态只能显示标题：「✕ 请求失败」亮着，但**为什么**失败藏在折叠区里，这就是隐瞒。而 cURL 导入的报错本来就渲染在响应区，用户刚在 cURL 页签点完「解析导入」，反馈不能被折叠吃掉。
+
+一句话概括这条规则：**成功不抢布局，失败一定让你看见。**
 
 ## 4. 左栏
 
@@ -122,7 +133,7 @@
 | 响应 > 1MB | 截断提示行保留，明示「复制/深链使用全量」 |
 | 未替换变量 | 提示行保留（响应头部下方） |
 
-**核心不变式**：折叠不等于隐瞒。折叠态头部必须仍带状态徽标/耗时/体积，且进行中与失败在折叠态同样亮色可辨。
+**核心不变式**：折叠不等于隐瞒。折叠态头部必须仍带状态徽标/耗时/体积，且进行中与失败在折叠态同样亮色可辨；错误出现时自动展开响应区（§3），保证失败原因不被折叠吃掉。
 
 ## 6. 文件与测试影响
 
@@ -141,12 +152,13 @@
 
 | 文件 | 职责 |
 |---|---|
-| `.../components/Splitter.tsx` | 分隔条：pointer 拖拽 + 键盘步进 + clamp + 双击复位 + ARIA |
-| `.../use-rest-layout.ts` | 布局记忆 hook：读写 `toolkit.rest-client.layout`，失败回落默认且不抛 |
+| `.../split-layout.ts` | 纯逻辑：`MIN_RESPONSE_H` / `MAX_RESERVE` / `DEFAULT_RESPONSE_H` / `RESIZE_STEP` 常量、`maxResponseHeight` / `clampResponseHeight` / `normalizeLayout` / `readLayout` / `writeLayout`。无可测容器高度时只保底不加编造的上界 |
+| `.../use-rest-layout.ts` | 布局记忆 hook：`{ height, collapsed, setHeight, toggle, expand, reset }`，经 `@core/storage` 读写 `toolkit.rest-client.layout` |
+| `.../components/Splitter.tsx` | 分隔条：pointer 拖拽（window 级 pointermove/up）+ 键盘步进 + clamp + 双击复位 + ARIA |
 
 ### 新增 data-testid
 
-`layout-splitter`、`response-toggle`、`request-tab-params|headers|body|curl`、`sidebar-tab-collections|history`、`dirty-marker`。
+`layout-splitter`、`response-panel`、`response-toggle`、`response-body`（展开态才存在的 body 容器，供「折叠后内容不在 DOM」断言）、`request-tab-params|headers|body|curl`、`sidebar-tab-collections|history`、`dirty-marker`。
 
 ### 新增测试覆盖
 
@@ -157,6 +169,7 @@
 5. `● 未保存` 出现/消失：改 URL 后出现；`另存为副本` 后消失。
 6. 布局记忆：读失败（mock `localStorage.getItem` 抛错）→ 回落默认值、不抛、不点亮写失败横幅。
 7. 折叠态失败可见：mock 请求失败，折叠后头部仍有 `✕ 请求失败`。
+8. 失败自动展开：先折叠，再触发一次失败请求 → 响应区变为展开态（`aria-expanded="true"`、`response-body` 回到 DOM）。
 
 ### 现有测试兼容性核查
 
