@@ -19,13 +19,17 @@ interface Props {
   name: string
   onNameChange: (name: string) => void
   onSaveCopy: () => void
+  dirty: boolean
 }
+
+type ReqTab = 'params' | 'headers' | 'body' | 'curl'
 
 export function RequestPanel(p: Props): JSX.Element {
   const [curlText, setCurlText] = useState('')
   const [formatMsg, setFormatMsg] = useState('')
   const [newKey, setNewKey] = useState('')
   const [newVal, setNewVal] = useState('')
+  const [tab, setTab] = useState<ReqTab>('params')
 
   // query 参数行以本地 state 为准,id 保持稳定 —— 避免每次渲染 parseQuery 重新生成
   // randomUUID 导致 key 变化,进而让输入框重挂载(丢焦点、破坏中文输入法组合)。
@@ -84,25 +88,33 @@ export function RequestPanel(p: Props): JSX.Element {
     }
   }
 
+  const qCount = params.length
+  const hCount = p.draft.headers.length
+
   // URL 栏实时 {{var}} 解析提示
   const hint = resolveVars(p.draft.url, p.env?.vars ?? {})
 
   return (
-    <section className="flex min-w-0 flex-1 flex-col gap-3">
-      <div className="flex items-center gap-2">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex items-center gap-2 border-b border-base-300 px-3 py-2">
         <input
-          className="input input-bordered input-sm min-w-0 flex-1 font-mono"
+          className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[13px] font-bold text-base-content outline-none focus:border-b focus:border-primary"
           placeholder="请求名称"
           value={p.name}
           onChange={(e) => p.onNameChange(e.target.value)}
           aria-label="请求名称"
         />
-        <button className="btn btn-sm btn-ghost" onClick={p.onSaveCopy} title="将当前草稿另存为集合副本">
+        {p.dirty && (
+          <span data-testid="dirty-marker" className="shrink-0 font-mono text-[11px] text-warning">
+            ● 未保存
+          </span>
+        )}
+        <button className="btn btn-xs btn-ghost shrink-0" onClick={p.onSaveCopy} title="将当前草稿另存为集合副本">
           另存为副本
         </button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 border-b border-base-300 px-3 py-2">
         <select
           data-testid="method-select"
           className={`select select-bordered select-sm w-32 shrink-0 font-mono font-bold ${methodColor(p.draft.method)}`}
@@ -155,136 +167,173 @@ export function RequestPanel(p: Props): JSX.Element {
         <div className="truncate font-mono text-[11px] text-neutral">→ {hint.resolved}</div>
       ) : null}
 
-      {/* query 参数编辑器(与 URL 文本双向同步,保留 {{var}}) */}
-      <div className="border border-base-300 bg-base-200/40 p-3">
-        <div className="mb-2 font-mono text-[11px] tracking-widest text-neutral">QUERY · 查询参数</div>
-        {params.length === 0 && <div className="mb-2 font-mono text-[11px] text-neutral">无参数</div>}
-        {params.map((row, i) => (
-          <div key={row.id} className="mb-1 flex gap-1">
-            <input
-              className="input input-bordered input-xs w-1/3 font-mono"
-              placeholder="key"
-              value={row.key}
-              onChange={(e) => editParam(i, { key: e.target.value })}
-            />
-            <input
-              className="input input-bordered input-xs flex-1 font-mono"
-              placeholder="value"
-              value={row.value}
-              onChange={(e) => editParam(i, { value: e.target.value })}
-            />
-            <button className="btn btn-xs btn-ghost text-error" title="删除参数" onClick={() => removeParam(i)}>
-              ✕
-            </button>
+      <div className="flex items-center gap-3 border-b border-base-300 px-3">
+        <button data-testid="request-tab-params" role="tab" aria-selected={tab === 'params'} className={tabClass(tab === 'params')} onClick={() => setTab('params')}>
+          Params{qCount > 0 ? ` ${qCount}` : ''}
+        </button>
+        <button data-testid="request-tab-headers" role="tab" aria-selected={tab === 'headers'} className={tabClass(tab === 'headers')} onClick={() => setTab('headers')}>
+          Headers{hCount > 0 ? ` ${hCount}` : ''}
+        </button>
+        <button data-testid="request-tab-body" role="tab" aria-selected={tab === 'body'} className={tabClass(tab === 'body')} onClick={() => setTab('body')}>
+          {TAB_LABEL.body}
+        </button>
+        <button data-testid="request-tab-curl" role="tab" aria-selected={tab === 'curl'} className={tabClass(tab === 'curl')} onClick={() => setTab('curl')}>
+          {TAB_LABEL.curl}
+        </button>
+      </div>
+
+      <div role="tabpanel" className="min-h-0 flex-1 overflow-auto p-3">
+        {tab === 'params' && (
+          <div className="border border-base-300 bg-base-200/40 p-3">
+            {/* query 参数编辑器(与 URL 文本双向同步,保留 {{var}}) */}
+            <div className="mb-2 font-mono text-[11px] tracking-widest text-neutral">QUERY · 查询参数</div>
+            {params.length === 0 && <div className="mb-2 font-mono text-[11px] text-neutral">无参数</div>}
+            {params.map((row, i) => (
+              <div key={row.id} className="mb-1 flex gap-1">
+                <input
+                  className="input input-bordered input-xs w-1/3 font-mono"
+                  placeholder="key"
+                  value={row.key}
+                  onChange={(e) => editParam(i, { key: e.target.value })}
+                />
+                <input
+                  className="input input-bordered input-xs flex-1 font-mono"
+                  placeholder="value"
+                  value={row.value}
+                  onChange={(e) => editParam(i, { value: e.target.value })}
+                />
+                <button className="btn btn-xs btn-ghost text-error" title="删除参数" onClick={() => removeParam(i)}>
+                  ✕
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-1">
+              <input
+                className="input input-bordered input-xs w-1/3 font-mono"
+                placeholder="新增 key"
+                value={newKey}
+                onChange={(e) => setNewKey(e.target.value)}
+              />
+              <input
+                className="input input-bordered input-xs flex-1 font-mono"
+                placeholder="value"
+                value={newVal}
+                onChange={(e) => setNewVal(e.target.value)}
+              />
+              <button className="btn btn-xs btn-ghost" onClick={addParam}>
+                + 参数
+              </button>
+            </div>
           </div>
-        ))}
-        <div className="flex gap-1">
-          <input
-            className="input input-bordered input-xs w-1/3 font-mono"
-            placeholder="新增 key"
-            value={newKey}
-            onChange={(e) => setNewKey(e.target.value)}
-          />
-          <input
-            className="input input-bordered input-xs flex-1 font-mono"
-            placeholder="value"
-            value={newVal}
-            onChange={(e) => setNewVal(e.target.value)}
-          />
-          <button className="btn btn-xs btn-ghost" onClick={addParam}>
-            + 参数
-          </button>
-        </div>
-      </div>
+        )}
 
-      {/* headers KV 表 */}
-      <div className="border border-base-300 bg-base-200/40 p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="font-mono text-[11px] tracking-widest text-neutral">HEADERS · 请求头</span>
-          <button
-            className="btn btn-xs btn-ghost"
-            onClick={() => p.onChange({ headers: [...p.draft.headers, newKv()] })}
-          >
-            + Header
-          </button>
-        </div>
-        {p.draft.headers.length === 0 && <div className="mb-1 font-mono text-[11px] text-neutral">无请求头</div>}
-        {p.draft.headers.map((h, i) => (
-          <div key={h.id} className="mb-1 flex gap-1">
-            <input
-              className="input input-bordered input-xs w-1/3 font-mono"
-              placeholder="Header-Name"
-              value={h.key}
-              onChange={(e) =>
-                p.onChange({ headers: p.draft.headers.map((x, idx) => (idx === i ? { ...x, key: e.target.value } : x)) })
-              }
-            />
-            <input
-              className="input input-bordered input-xs flex-1 font-mono"
-              placeholder="value(支持 {{var}})"
-              value={h.value}
-              onChange={(e) =>
-                p.onChange({ headers: p.draft.headers.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)) })
-              }
-            />
-            <button
-              className="btn btn-xs btn-ghost text-error"
-              title="删除"
-              onClick={() => p.onChange({ headers: p.draft.headers.filter((_, idx) => idx !== i) })}
-            >
-              ✕
-            </button>
+        {tab === 'headers' && (
+          <div className="border border-base-300 bg-base-200/40 p-3">
+            {/* headers KV 表 */}
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-mono text-[11px] tracking-widest text-neutral">HEADERS · 请求头</span>
+              <button
+                className="btn btn-xs btn-ghost"
+                onClick={() => p.onChange({ headers: [...p.draft.headers, newKv()] })}
+              >
+                + Header
+              </button>
+            </div>
+            {p.draft.headers.length === 0 && <div className="mb-1 font-mono text-[11px] text-neutral">无请求头</div>}
+            {p.draft.headers.map((h, i) => (
+              <div key={h.id} className="mb-1 flex gap-1">
+                <input
+                  className="input input-bordered input-xs w-1/3 font-mono"
+                  placeholder="Header-Name"
+                  value={h.key}
+                  onChange={(e) =>
+                    p.onChange({ headers: p.draft.headers.map((x, idx) => (idx === i ? { ...x, key: e.target.value } : x)) })
+                  }
+                />
+                <input
+                  className="input input-bordered input-xs flex-1 font-mono"
+                  placeholder="value(支持 {{var}})"
+                  value={h.value}
+                  onChange={(e) =>
+                    p.onChange({ headers: p.draft.headers.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)) })
+                  }
+                />
+                <button
+                  className="btn btn-xs btn-ghost text-error"
+                  title="删除"
+                  onClick={() => p.onChange({ headers: p.draft.headers.filter((_, idx) => idx !== i) })}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* body 编辑器 + JSON 格式化 */}
-      <div className="border border-base-300 bg-base-200/40 p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="font-mono text-[11px] tracking-widest text-neutral">BODY · 请求体</span>
-          <button className="btn btn-xs btn-ghost" onClick={formatBody}>
-            格式化 JSON
-          </button>
-        </div>
-        <textarea
-          className="h-32 w-full rounded border border-base-300 bg-base-100/60 p-3 font-mono text-[13px] leading-relaxed"
-          placeholder='{"key":"value"}  支持 {{var}}'
-          value={p.draft.body}
-          onChange={(e) => p.onChange({ body: e.target.value })}
-          onKeyDown={onKeyDown}
-        />
-        {formatMsg && <div className="mt-1 font-mono text-[11px] text-error">{formatMsg}</div>}
-      </div>
+        {tab === 'body' && (
+          <div className="flex h-full flex-col border border-base-300 bg-base-200/40 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-mono text-[11px] tracking-widest text-neutral">BODY · 请求体</span>
+              <button className="btn btn-xs btn-ghost" onClick={formatBody}>
+                格式化 JSON
+              </button>
+            </div>
+            {formatMsg && <div className="mb-1 font-mono text-[11px] text-error">{formatMsg}</div>}
+            <textarea
+              className="min-h-0 w-full flex-1 rounded border border-base-300 bg-base-100/60 p-3 font-mono text-[13px] leading-relaxed"
+              placeholder='{"key":"value"}  支持 {{var}}'
+              value={p.draft.body}
+              onChange={(e) => p.onChange({ body: e.target.value })}
+              onKeyDown={onKeyDown}
+            />
+          </div>
+        )}
 
-      {/* cURL 导入 / 导出 */}
-      <div className="border border-base-300 bg-base-200/40 p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="font-mono text-[11px] tracking-widest text-neutral">cURL · 导入 / 导出</span>
-          <button data-testid="curl-export-btn" className="btn btn-xs btn-ghost" onClick={p.onExportCurl}>
-            导出 cURL
-          </button>
-        </div>
-        <textarea
-          data-testid="curl-import"
-          className="h-20 w-full rounded border border-base-300 bg-base-100/60 p-3 font-mono text-[12px] leading-relaxed"
-          placeholder="粘贴浏览器 Copy as cURL (bash / cmd)…"
-          value={curlText}
-          onChange={(e) => setCurlText(e.target.value)}
-        />
-        <div className="mt-2 flex gap-2">
-          <button
-            className="btn btn-xs btn-primary"
-            onClick={() => {
-              p.onImportCurl(curlText)
-              setCurlText('')
-            }}
-          >
-            解析导入
-          </button>
-        </div>
+        {tab === 'curl' && (
+          <div className="border border-base-300 bg-base-200/40 p-3">
+            {/* cURL 导入 / 导出 */}
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-mono text-[11px] tracking-widest text-neutral">cURL · 导入 / 导出</span>
+              <button data-testid="curl-export-btn" className="btn btn-xs btn-ghost" onClick={p.onExportCurl}>
+                导出 cURL
+              </button>
+            </div>
+            <textarea
+              data-testid="curl-import"
+              className="h-20 w-full rounded border border-base-300 bg-base-100/60 p-3 font-mono text-[12px] leading-relaxed"
+              placeholder="粘贴浏览器 Copy as cURL (bash / cmd)…"
+              value={curlText}
+              onChange={(e) => setCurlText(e.target.value)}
+            />
+            <div className="mt-2 flex gap-2">
+              <button
+                className="btn btn-xs btn-primary"
+                onClick={() => {
+                  p.onImportCurl(curlText)
+                  setCurlText('')
+                }}
+              >
+                解析导入
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )
+}
+
+const TAB_LABEL: Record<'params' | 'headers' | 'body' | 'curl', string> = {
+  params: 'Params',
+  headers: 'Headers',
+  body: 'Body',
+  curl: 'cURL'
+}
+
+function tabClass(active: boolean): string {
+  return `btn btn-xs btn-ghost font-mono ${
+    active ? 'border-b-2 border-primary text-base-content' : 'text-neutral'
+  }`
 }
 
 /** 外部 URL 回同步时,按「key 名 + 位置」复用旧行的 id,保持输入框 DOM 稳定 */

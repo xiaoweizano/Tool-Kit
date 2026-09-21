@@ -10,11 +10,13 @@ import type { Env, HistoryEntry, RequestModel, RequestNode, ResponseModel, UiErr
 
 const EMPTY_REQUEST: RequestModel = { method: 'GET', url: '', headers: [], body: '' }
 
+// 键序与 EMPTY_REQUEST 保持一致:dirty 用 JSON.stringify 比较,键序不同会把
+// 深相等的 draft/baseline 判成不等(如「另存为副本」重置 baseline 后标记不消失)。
 const clone = (r: RequestModel): RequestModel => ({
   method: r.method,
   url: r.url,
-  body: r.body,
-  headers: r.headers.map((h) => ({ ...h }))
+  headers: r.headers.map((h) => ({ ...h })),
+  body: r.body
 })
 
 const uid = (): string => crypto.randomUUID()
@@ -186,6 +188,7 @@ export default function RestApiClientPage(): JSX.Element {
             name={name}
             onNameChange={setName}
             onSaveCopy={onSaveCopy}
+            dirty={dirty}
           />
           <ResponsePanel
             response={response}

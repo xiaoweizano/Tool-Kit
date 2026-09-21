@@ -6,7 +6,7 @@ import { useRestStore } from '@tools/rest-api-client/store'
 afterEach(() => { cleanup(); useRestStore.setState({ writeFailed: false }) })
 vi.mock('@core/http', () => ({ httpFetch: vi.fn(async () => ({ ok: true, status: 200, statusText: 'OK', headers: {}, body: '{}', bodyBytes: 2, finalUrl: 'u' })), httpCancel: vi.fn() }))
 describe('rest client UI', () => {
-  it('渲染三栏关键控件', () => { render(<RestApiClientPage />); expect(screen.getByTestId('method-select')).toBeTruthy(); expect(screen.getByTestId('send-btn')).toBeTruthy() })
+  it('渲染请求行与发送控件(上下分栏布局)', () => { render(<RestApiClientPage />); expect(screen.getByTestId('method-select')).toBeTruthy(); expect(screen.getByTestId('send-btn')).toBeTruthy() })
   it('修改 URL 后 dirty=true,切换集合项触发确认(window.confirm)', () => {
     const spy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     render(<RestApiClientPage />)
