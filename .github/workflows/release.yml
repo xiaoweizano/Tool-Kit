@@ -53,13 +53,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
-        with: { name: win-artifacts, path: dist/win }
+        with: { name: win-artifacts, path: release }
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
-        with: { name: mac-artifacts, path: dist/mac }
+        with: { name: mac-artifacts, path: release }
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
           files: |
-            dist/win/*.exe
-            dist/mac/*.dmg
+            release/*.exe
+            release/*.dmg
